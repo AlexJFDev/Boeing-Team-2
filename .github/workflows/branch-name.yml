@@ -2,7 +2,7 @@ name: Branch name
 
 on:
   pull_request:
-    branches: [development, production, main]
+    branches: [development, production]
     types: [opened, reopened, synchronize, edited]
 
 jobs:
