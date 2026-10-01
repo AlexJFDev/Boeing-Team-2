@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.pytest_cache/
+logs/
+
+# Personal agent instructions (per-developer, not shared)
+CLAUDE.local.md
