@@ -1,0 +1,37 @@
+name: Branch name
+
+on:
+  pull_request:
+    branches: [development, production, main]
+    types: [opened, reopened, synchronize, edited]
+
+jobs:
+  check-branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate head branch name
+        env:
+          # Passed through env rather than interpolated into the script so a
+          # crafted branch name cannot inject shell commands.
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # Issue branches: {type}-{number}/{name}, e.g. feat-26/run-config-schema
+          issue_re='^(feat|fix|docs|test|eval|release|chore)-[0-9]+/[a-z0-9]+(-[a-z0-9]+)*$'
+
+          # Release merges: development -> production
+          if [[ "$HEAD_REF" == "development" && "$BASE_REF" == "production" ]]; then
+            echo "Release merge from development to production."
+            exit 0
+          fi
+
+          if [[ "$HEAD_REF" =~ $issue_re ]]; then
+            echo "Branch name '$HEAD_REF' is valid."
+            exit 0
+          fi
+
+          echo "::error::Branch name '$HEAD_REF' does not match {type}-{number}/{name}."
+          echo "Allowed types: feat, fix, docs, test, eval, release, chore."
+          echo "The number is the GitHub issue number; the name is lowercase words joined by hyphens."
+          echo "Example: feat-26/run-config-schema"
+          exit 1
