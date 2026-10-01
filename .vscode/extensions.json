@@ -9,6 +9,7 @@
     "ms-python.vscode-python-envs",
     "ukaisi.inspect-ai",
     "ms-azuretools.vscode-docker",
-    "redhat.vscode-yaml"
+    "redhat.vscode-yaml",
+    "streetsidesoftware.code-spell-checker"
   ]
 }
