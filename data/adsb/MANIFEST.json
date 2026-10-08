@@ -1,0 +1,21 @@
+{
+  "dataset": "adsb-frames",
+  "version": "1.0.0",
+  "file": "frames_v1.0.0.jsonl",
+  "sha256": "f48ea461bccff000e79cdb520fa7f576c6242ae51999620abe81857a433d352d",
+  "frame_count": 71,
+  "counts": {
+    "df17_airborne_position_corrupt": 2,
+    "df17_airborne_position_valid": 41,
+    "df17_airborne_velocity_corrupt": 1,
+    "df17_airborne_velocity_valid": 10,
+    "df17_identification_corrupt": 3,
+    "df17_identification_valid": 10,
+    "df18_identification_corrupt": 1,
+    "df18_identification_valid": 3
+  },
+  "generator": "scripts/adsb/build_frames.py",
+  "reference_decoder": "pyModeS==3.6.0",
+  "data_origin": "synthetic; ICAO block F00000-F07FFF; ZZZ placeholder callsigns",
+  "timestamps": "synthetic seconds, not wall-clock time"
+}

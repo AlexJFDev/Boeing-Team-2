@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+# Make the repo root importable so tests can `import bench`.
+pythonpath = ["."]
+testpaths = ["tests"]
