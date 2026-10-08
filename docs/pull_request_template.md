@@ -7,10 +7,8 @@ What does this PR do and why?
 
 ## Checklist
 
-- [ ] Regression set passes
-- [ ] Tests added or updated
-- [ ] Other requirement 1
-- [ ] Other requirement 2
+- [ ] Requirement 1
+- [ ] Requirement 2
 - [ ] Etc
 
 ## How to verify
