@@ -66,7 +66,7 @@ inspect eval tasks/smoke_test.py --model mockllm/model
 | Path | Contents |
 | --- | --- |
 | `tasks/` | Inspect AI tasks; currently the install smoke test |
-| `bench/` | Runner package; `bench/adsb/cpr.py` is the independent CPR position verifier |
+| `bench/` | Runner package; `bench/adsb/oracle.py` is the pyModeS ground-truth oracle, `bench/adsb/cpr.py` the independent CPR position verifier |
 | `data/` | Versioned task data with manifests; `data/adsb/` holds the ADS-B frame set |
 | `scripts/` | Build tools that generate the data, e.g. `scripts/adsb/build_frames.py` |
 | `tests/` | pytest suite (`pytest` from the repo root) |
