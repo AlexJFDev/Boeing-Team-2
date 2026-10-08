@@ -7,6 +7,8 @@ What does this PR do and why?
 
 ## Checklist
 
+Tasks that should be completed and requirements to check as part of the PR approval process.
+
 - [ ] Requirement 1
 - [ ] Requirement 2
 - [ ] Etc
