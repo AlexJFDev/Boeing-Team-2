@@ -7,6 +7,8 @@ import logging
 from inspect_ai.scorer import Score, Scorer, Target, accuracy, scorer, stderr
 from inspect_ai.solver import TaskState
 
+SCORER_VERSION = "1.0.0"
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,6 +36,7 @@ def deterministic_exact_match() -> Scorer:
                 value=1.0,
                 answer=predicted_raw,
                 explanation="Exact match after normalization.",
+                metadata={"scorer_version": SCORER_VERSION},
             )
 
         logger.warning(
@@ -43,7 +46,11 @@ def deterministic_exact_match() -> Scorer:
             value=0.0,
             answer=predicted_raw,
             explanation=f"Mismatch: target={target_raw!r} predicted={predicted_raw!r}",
-            metadata={"target": target_raw, "predicted": predicted_raw},
+            metadata={
+                "target": target_raw,
+                "predicted": predicted_raw,
+                "scorer_version": SCORER_VERSION,
+            },
         )
 
     return score
