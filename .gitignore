@@ -3,5 +3,10 @@ __pycache__/
 .pytest_cache/
 logs/
 
+# Per-developer secrets (API keys). Never commit; the template stays tracked.
+.env
+.env.*
+!.env.example
+
 # Personal agent instructions (per-developer, not shared)
 CLAUDE.local.md

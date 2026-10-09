@@ -92,6 +92,18 @@ sudo usermod -aG docker "$USER"   # log out and back in afterwards
 docker run --rm hello-world
 ```
 
+## API keys and secrets
+
+Hosted-model providers need API keys. Local Ollama runs do not.
+
+1. Copy the template: `cp .env.example .env`.
+2. Fill in only the keys you use. Inspect AI reads `.env` automatically.
+3. Check `git status`. `.env` must not appear; it is git-ignored.
+
+Never commit, paste, or log a key. A secret scan (gitleaks) runs on every pull
+request and fails the check if a commit contains a key-like string. If a real key
+is ever committed, rotate it immediately; removing it from the PR is not enough.
+
 ## Viewing results
 
 Eval logs are written to `logs/` (git-ignored). Browse them with:
