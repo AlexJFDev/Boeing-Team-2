@@ -1,0 +1,1428 @@
+{
+  "schema": "afdx_schema.json",
+  "cases": [
+    {
+      "name": "minimal_valid",
+      "expect_valid": true,
+      "expect_path": null,
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "every_permitted_bag",
+      "expect_valid": true,
+      "expect_path": null,
+      "note": "BAG 1..128 ms, powers of two",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 200,
+            "name": "vl_100",
+            "bag_ms": 1,
+            "lmax_bytes": 512,
+            "skew_max_ms": 0,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          },
+          {
+            "vl_id": 201,
+            "name": "vl_100",
+            "bag_ms": 2,
+            "lmax_bytes": 512,
+            "skew_max_ms": 0,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          },
+          {
+            "vl_id": 202,
+            "name": "vl_100",
+            "bag_ms": 4,
+            "lmax_bytes": 512,
+            "skew_max_ms": 0,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          },
+          {
+            "vl_id": 203,
+            "name": "vl_100",
+            "bag_ms": 8,
+            "lmax_bytes": 512,
+            "skew_max_ms": 0,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          },
+          {
+            "vl_id": 204,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 0,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          },
+          {
+            "vl_id": 205,
+            "name": "vl_100",
+            "bag_ms": 32,
+            "lmax_bytes": 512,
+            "skew_max_ms": 0,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          },
+          {
+            "vl_id": 206,
+            "name": "vl_100",
+            "bag_ms": 64,
+            "lmax_bytes": 512,
+            "skew_max_ms": 0,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          },
+          {
+            "vl_id": 207,
+            "name": "vl_100",
+            "bag_ms": 128,
+            "lmax_bytes": 512,
+            "skew_max_ms": 0,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "boundary_values",
+      "expect_valid": true,
+      "expect_path": null,
+      "note": "SkewMax exactly 253 x BAG; payload exactly fills Lmax; SN starts at 255",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 65535,
+            "name": "vl_100",
+            "bag_ms": 128,
+            "lmax_bytes": 1518,
+            "skew_max_ms": 32384,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 1471,
+            "networks": [
+              "A"
+            ],
+            "initial_sn": 255
+          },
+          {
+            "vl_id": 1,
+            "name": "vl_100",
+            "bag_ms": 1,
+            "lmax_bytes": 64,
+            "skew_max_ms": 253,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 17,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "sn_wrap_start",
+      "expect_valid": true,
+      "expect_path": null,
+      "note": "255 -> 1 wrap inside the first few frames",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 254
+          }
+        ]
+      }
+    },
+    {
+      "name": "resync_without",
+      "expect_valid": true,
+      "expect_path": null,
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_without_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "single_network_b",
+      "expect_valid": true,
+      "expect_path": null,
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "bag_not_power_of_two_3",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/bag_ms",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 3,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "bag_not_power_of_two_6",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/bag_ms",
+      "note": "looks plausible, still wrong",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 6,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "bag_not_power_of_two_100",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/bag_ms",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 100,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "bag_zero",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/bag_ms",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 0,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "bag_above_128",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/bag_ms",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 256,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "bag_fractional",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/bag_ms",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 1.5,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "bag_string",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/bag_ms",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": "16",
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "skew_over_253_bag",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/skew_max_ms",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 1,
+            "lmax_bytes": 512,
+            "skew_max_ms": 254,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "skew_negative",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/skew_max_ms",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": -1,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "vl_id_zero",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/vl_id",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 0,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "vl_id_16bit_overflow",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/vl_id",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 65536,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "vl_id_negative",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/vl_id",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": -5,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "vl_id_duplicate",
+      "expect_valid": false,
+      "expect_path": "virtual_links/1/vl_id",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 7,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          },
+          {
+            "vl_id": 7,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "initial_sn_zero_reserved",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/initial_sn",
+      "note": "0 is reserved for reset",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "initial_sn_256",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/initial_sn",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 256
+          }
+        ]
+      }
+    },
+    {
+      "name": "lmax_below_min",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/lmax_bytes",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 63,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "lmax_above_max",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/lmax_bytes",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 1519,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "payload_exceeds_lmax",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/app_payload_bytes",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 64,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 18,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "payload_negative",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/app_payload_bytes",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": -1,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "networks_empty",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/networks",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "networks_unknown_C",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/networks/0",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "C"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "networks_duplicate",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/networks",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "A"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "udp_port_zero",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/udp_dst_port",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 0,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "udp_port_overflow",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/udp_src_port",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 70000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "interface_id_4bit",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/interface_id",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 8,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "src_ip_not_10_net",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/src_ip",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "192.168.1.1",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "src_ip_bad_octet",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0/src_ip",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.300",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing_bag",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown_field",
+      "expect_valid": false,
+      "expect_path": "virtual_links/0",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1,
+            "priority": "high"
+          }
+        ]
+      }
+    },
+    {
+      "name": "no_virtual_links",
+      "expect_valid": false,
+      "expect_path": "virtual_links",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": []
+      }
+    },
+    {
+      "name": "bad_resync_rule",
+      "expect_valid": false,
+      "expect_path": "redundancy/resync_rule",
+      "note": "",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "ignore"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing_resync_rule",
+      "expect_valid": false,
+      "expect_path": "redundancy",
+      "note": "tasks must state the resync rule (catalogue C1)",
+      "config": {
+        "schema_version": "1.0",
+        "redundancy": {
+          "integrity_check": true
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "wrong_schema_version",
+      "expect_valid": false,
+      "expect_path": "schema_version",
+      "note": "",
+      "config": {
+        "schema_version": "2.0",
+        "redundancy": {
+          "integrity_check": true,
+          "resync_rule": "drop_with_resync"
+        },
+        "virtual_links": [
+          {
+            "vl_id": 100,
+            "name": "vl_100",
+            "bag_ms": 16,
+            "lmax_bytes": 512,
+            "skew_max_ms": 2,
+            "src_ip": "10.1.2.3",
+            "src_mac_user_id": 4660,
+            "interface_id": 1,
+            "udp_src_port": 5000,
+            "udp_dst_port": 5001,
+            "app_payload_bytes": 64,
+            "networks": [
+              "A",
+              "B"
+            ],
+            "initial_sn": 1
+          }
+        ]
+      }
+    }
+  ]
+}
