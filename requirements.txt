@@ -3,7 +3,8 @@ openai==3.22.1
 pyModeS==3.6.0
 pytest==9.1.1
 
-"afdx requirements"
+
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 scapy==2.8.0
+pytest-asyncio==1.4.0

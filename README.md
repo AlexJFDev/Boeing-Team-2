@@ -98,4 +98,8 @@ Sprint 1 runs Sep 27 to Oct 11, 2026; the full plan runs to the Dec 6 symposium.
 
 ## Team
 
-Alex Fuhrig, Adam Futerman, Kean Jaldin Guzman, Kayrene Woods, Sahiti Srikakolapu.
+Alex Fuhrig (GitHub: )
+Adam Futerman (GitHub: )
+Kean Jaldin Guzman (GitHub: )
+Kayrene Woods (GitHub: kaykayzara)
+Sahiti Srikakolapu (GitHub: )
