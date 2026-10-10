@@ -1,0 +1,35 @@
+# Docker sandbox for Inspect AI (WBS 1.8 / 1.9).
+#
+# Inspect only disables networking by itself when no compose file exists.
+# Because this file exists, the isolation settings below are ours to keep:
+# tests/test_sandbox_isolation.py (WBS 1.9) fails if any of them is removed.
+services:
+  default:
+    image: boeing-team-2-sandbox:1.0.0   # SANDBOX_VERSION
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: tail -f /dev/null
+    init: true
+    stop_grace_period: 1s
+
+    # No network of any kind.
+    network_mode: none
+
+    # Nothing from the host is mounted. The root filesystem is read-only; the
+    # only writable paths are in-memory and vanish with the container.
+    read_only: true
+    tmpfs:
+      - /workspace:uid=1000,gid=1000,mode=0700,size=64m
+      - /tmp:size=64m
+
+    # Unprivileged, and unable to gain privileges.
+    user: sandbox
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+    # Keep a runaway tool call from exhausting the host.
+    pids_limit: 128
+    mem_limit: 1g
