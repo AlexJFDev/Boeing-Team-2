@@ -10,3 +10,13 @@ B ARINC 429, C ARINC 664, D ACARS); the item type such as A1 goes in `metadata`.
 
 Version rules match `data/adsb/README.md`: a file that a run has used is frozen, and
 a change gets a new file name with a bumped version.
+
+Every file here is listed with its sha256 in `MANIFEST.json` (WBS 1.14). The loader
+refuses a task file that is unlisted or does not match. List a new file with:
+
+```bash
+python -m bench.corpus --add data/tasks/<name>_vX.Y.Z.jsonl
+```
+
+That command never changes an existing entry, so an edited file cannot be re-listed;
+save the change as a new version instead.

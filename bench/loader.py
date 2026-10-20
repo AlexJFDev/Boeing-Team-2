@@ -33,6 +33,9 @@ Optional fields:
 
 Loading fails with ``TaskLoadError`` naming the task (or its line number when it
 has no usable ID) if a record is malformed or names a preamble that does not exist.
+After the records pass, the task file and every preamble it uses are checked against
+their manifests (WBS 1.14, bench/corpus.py); a file that does not match raises
+``CorpusError``.
 
 Command-line demo, prints the final prompt of every task:
 
@@ -47,6 +50,8 @@ from pathlib import Path
 from typing import Any
 
 from inspect_ai.dataset import Dataset, Sample, json_dataset
+
+from bench.corpus import CorpusError, task_corpus
 
 LOADER_VERSION = "1.0.0"
 
@@ -162,13 +167,22 @@ def make_record_to_sample(preamble_dir: Path = PREAMBLE_DIR):
     return record_to_sample
 
 
-def load_tasks(path: str | Path, preamble_dir: Path = PREAMBLE_DIR) -> Dataset:
-    """Load a task file. Raises TaskLoadError on the first bad record."""
-    return json_dataset(
+def load_tasks(path: str | Path, preamble_dir: Path = PREAMBLE_DIR, *,
+               verify: bool = True) -> Dataset:
+    """Load a task file.
+
+    Raises TaskLoadError on the first bad record, then CorpusError if the task file
+    or a preamble it uses does not match its manifest. ``verify=False`` skips the
+    manifest check; it is for tests that build throwaway task files.
+    """
+    dataset = json_dataset(
         str(path),
         sample_fields=make_record_to_sample(preamble_dir),
         shuffle=False,
     )
+    if verify:
+        task_corpus(path, preamble_dir=preamble_dir)
+    return dataset
 
 
 def main() -> None:
@@ -177,7 +191,7 @@ def main() -> None:
     args = parser.parse_args()
     try:
         dataset = load_tasks(args.tasks)
-    except TaskLoadError as exc:
+    except (TaskLoadError, CorpusError) as exc:
         raise SystemExit(f"error: {exc}") from None
     for sample in dataset:
         print(f"===== {sample.id} (preamble {sample.metadata['preamble']})")
