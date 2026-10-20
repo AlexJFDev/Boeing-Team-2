@@ -1,0 +1,9 @@
+Operational premises for ADS-B / Mode S tasks. They apply to the task below unless the task itself says otherwise.
+
+1. Each message is a 1090 MHz Mode S extended squitter (downlink format 17 or 18): 112 bits, written as 28 hexadecimal characters, most significant bit first.
+2. Message layouts follow ADS-B Version 2 (RTCA DO-260B).
+3. The last 24 bits are the Mode S parity field. If the parity check fails, the message is corrupt: reject it and do not report decoded fields from it.
+4. Airborne positions are encoded with Compact Position Reporting (CPR). One position message on its own does not give latitude and longitude. A global position needs one even and one odd airborne position message from the same aircraft, received no more than 10 seconds apart. No receiver location or other reference position is available unless the task gives one.
+5. If the information provided is not enough to determine an answer, say that it cannot be determined rather than guessing.
+6. Reception times are synthetic, in seconds. Only the differences between them are meaningful.
+7. All messages are synthetic. Addresses and callsigns do not belong to real aircraft.
