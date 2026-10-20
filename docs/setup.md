@@ -1,8 +1,9 @@
 # Team setup guide
 
 How to get a working development environment for the benchmark runner: Python
-virtual environment, Inspect AI, Docker, Ollama, and VT ARC access. When you finish,
-`inspect eval --help` runs and the smoke test passes against a local model and an ARC model.
+virtual environment, Inspect AI, Ollama, an optional vLLM server (VT ARC for Virginia
+Tech students), and Docker. When you finish, `inspect eval --help` runs and the smoke
+test passes against a local model.
 
 ## Prerequisites
 
@@ -82,23 +83,54 @@ a score of 0 is expected here; this only proves Inspect itself works.
 
    You should see `accuracy 1.000`.
 
-## 5. Run against a VT ARC model (vLLM)
+## 5. Run against a vLLM server (optional)
 
-Larger open-weight models run on VT Advanced Research Computing (ARC), which serves
-them through an OpenAI-compatible vLLM endpoint. Inspect's `vllm` provider talks to it.
-You need a Virginia Tech account, an ARC API key, and the VT VPN.
+Larger open-weight models can run on a vLLM server. vLLM exposes an OpenAI-compatible
+API, and Inspect's `vllm` provider talks to it. Skip this step if Ollama is enough for
+your work. Virginia Tech students can use VT's ARC service instead of running a
+server (see 5.3).
 
-### 5.1 Get an ARC API key
+### 5.1 Point Inspect at the server
 
-Follow the [ARC LLM API guide](https://www.docs.arc.vt.edu/ai/011_llm_api_arc_vt_edu.html):
+If you have not already, copy the template: `cp .env.example .env`. Then add these
+lines to `.env`:
+
+```dotenv
+VLLM_BASE_URL=<server URL, ending in /v1>
+VLLM_API_KEY=<key for that server>
+```
+
+Inspect reads these two names directly, so no other setup is needed. The template is
+prefilled with the VT ARC URL; replace it if you use a different server. Never commit
+`.env` (see "API keys and secrets" below).
+
+### 5.2 Run the smoke test
+
+```bash
+inspect eval tasks/smoke_test.py --model vllm/<model> --temperature 0 --seed 42
+```
+
+`<model>` is the model name the server lists. You should see `accuracy 1.000`.
+
+### 5.3 Use VT ARC (Virginia Tech students)
+
+VT Advanced Research Computing (ARC) serves open-weight models, such as
+`gpt-oss-120b`, through a vLLM endpoint at `https://llm-api.arc.vt.edu/api/v1`. You
+need a VT account, an ARC API key, and the VT VPN. ARC adds and removes models over
+time; the current list is in the
+[ARC LLM API guide](https://www.docs.arc.vt.edu/ai/011_llm_api_arc_vt_edu.html).
+
+### 5.4 Get an ARC API key
 
 1. Go to <https://llm.arc.vt.edu> and sign in with your VT account. No separate ARC
    account is needed.
 2. Open **User profile > Settings > Account > API keys** and generate a key.
+3. Put it in `.env` as `VLLM_API_KEY`, with `VLLM_BASE_URL` set to the ARC URL above.
 
-Keys are personal. Do not share yours, do not commit it to git, and do not paste it anywhere except your `.env`.
+Keys are personal. Do not share yours, do not commit it to git, and do not paste it
+anywhere except your `.env`.
 
-### 5.2 Connect to the VT VPN
+### 5.5 Connect to the VT VPN
 
 The ARC endpoint is reached over the VT VPN. Install and connect the Cisco VPN client
 using the VT 4Help articles:
@@ -109,21 +141,7 @@ using the VT 4Help articles:
 
 Stay connected while you run anything against ARC.
 
-### 5.3 Add the key to `.env`
-
-1. If you have not already, copy the template: `cp .env.example .env`.
-2. Set your key. `VLLM_BASE_URL` is already filled in with the ARC endpoint; leave it
-   unless ARC changes it.
-
-   ```dotenv
-   VLLM_API_KEY=<your ARC key>
-   VLLM_BASE_URL=https://llm-api.arc.vt.edu/api/v1
-   ```
-
-Inspect reads these two names directly, so no other setup is needed. Never commit
-`.env` (see "API keys and secrets" below).
-
-### 5.4 Run the smoke test against an ARC model
+### 5.6 Run the smoke test against ARC
 
 With the VPN connected:
 
@@ -131,8 +149,15 @@ With the VPN connected:
 inspect eval tasks/smoke_test.py --model vllm/gpt-oss-120b --temperature 0 --seed 42
 ```
 
-You should see `accuracy 1.000`. ARC adds and removes models over time; the current
-list is in the ARC LLM API guide linked above.
+To also record ARC's details for the model in the log, and to fail before writing a
+log if ARC is unreachable, use the runner instead:
+
+```bash
+python -m runner.run configs/arc.json tasks/smoke_test.py
+```
+
+ARC does not publish a weights revision, so the log records the model name plus the
+`created_at` and `updated_at` ARC lists for it. Treat those as the only version signal.
 
 ## 6. Install Docker
 
@@ -175,7 +200,7 @@ inspect view
 | `ConnectError` or `Connection refused` for `ollama/...` | Ollama server is not running | Start it with `ollama serve` (or the Ollama app) and retry |
 | `model "llama3.1" not found` | Model not pulled | `ollama pull llama3.1` |
 | `permission denied ... /var/run/docker.sock` | User not in `docker` group | See step 6, then log out and back in |
-| `APIConnectionError: Connection error.` for `vllm/...` | `VLLM_BASE_URL` is wrong, or you are not on the VT VPN | Connect to the VPN (step 5.2), check the URL in `.env`, then retry |
-| `401` or `Incorrect API key` for `vllm/...` | `VLLM_API_KEY` is missing or wrong | Generate a key (step 5.1) and set it in `.env` |
+| `APIConnectionError: Connection error.` for `vllm/...` | `VLLM_BASE_URL` is wrong, or you are not on the VT VPN | Connect to the VPN (step 5.5), check the URL in `.env`, then retry |
+| `401` or `Incorrect API key` for `vllm/...` | `VLLM_API_KEY` is missing or wrong | Generate a key (step 5.4) and set it in `.env` |
 | `429` for `vllm/...` | ARC allows 20 requests in flight per user across all models | Lower concurrency (for example `--max-connections 10`) and retry |
 | `error: externally-managed-environment` | Installing outside a virtual environment | Create and activate `.venv` first |
