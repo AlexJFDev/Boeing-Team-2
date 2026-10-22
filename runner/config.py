@@ -21,6 +21,7 @@ class RunConfig:
     temperature: float
     seed: int
     max_tokens: int | None = None
+    model_info_fields: tuple[str, ...] = ()
 
 
 def parse_run_config(data: dict) -> RunConfig:
@@ -40,6 +41,7 @@ def parse_run_config(data: dict) -> RunConfig:
         temperature=float(data["temperature"]),
         seed=data["seed"],
         max_tokens=data.get("max_tokens"),
+        model_info_fields=tuple(data.get("model_info_fields", ())),
     )
 
 
