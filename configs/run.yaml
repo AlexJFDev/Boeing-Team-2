@@ -1,0 +1,10 @@
+# Run config for runner.preflight. Same keys as `inspect eval --run-config`.
+# model, generate_config.temperature, generate_config.seed and
+# metadata.corpus_version are required; 0 is a valid value, a missing key is not.
+task: tasks/smoke_test.py
+model: mockllm/model
+generate_config:
+  temperature: 0
+  seed: 42
+metadata:
+  corpus_version: synthetic-0.1.0

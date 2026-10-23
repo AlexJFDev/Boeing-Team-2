@@ -181,6 +181,21 @@ Never commit, paste, or log a key. A secret scan (gitleaks) runs on every pull
 request and fails the check if a commit contains a key-like string. If a real key
 is ever committed, rotate it immediately; removing it from the PR is not enough.
 
+## Running from a run config
+
+`configs/run.yaml` shows the run-config format. It uses the same keys as
+`inspect eval --run-config`, and `runner.preflight` refuses to start, before any
+model call, if `model`, `generate_config.temperature`, `generate_config.seed` or
+`metadata.corpus_version` is missing, or if a key is not recognised:
+
+```bash
+python -m runner.preflight configs/run.yaml
+```
+
+For `vllm/...` models it also checks that the endpoint is reachable and records what
+the endpoint lists for the model in the log. Optional `model_info_fields` names extra
+fields to record.
+
 ## Viewing results
 
 Eval logs are written to `logs/` (git-ignored). Browse them with:
