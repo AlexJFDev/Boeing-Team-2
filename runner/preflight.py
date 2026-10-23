@@ -4,9 +4,15 @@
 
 The file uses the same keys as ``inspect eval --run-config`` (``task``, ``model``,
 ``generate_config``, ``metadata``). Inspect already handles loading it; this module
-only refuses to start when a reproducibility field is missing, before any model
-call. ``metadata.corpus_version`` has no Inspect equivalent, so it travels in the
-run metadata and shows up in ``EvalLog.eval.metadata``.
+only refuses to start when a reproducibility field is missing, or a key is not
+recognised, before any model call. ``metadata.corpus_version`` has no Inspect
+equivalent, so it travels in the run metadata and shows up in
+``EvalLog.eval.metadata``.
+
+For ``vllm/...`` models the endpoint is queried first (see ``runner.endpoint``): an
+unreachable endpoint aborts before any log is written, and what it lists for the
+model is recorded in the log. The optional ``model_info_fields`` key names extra
+endpoint-specific fields to record.
 """
 
 import argparse
@@ -15,8 +21,13 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from dotenv import load_dotenv
 from inspect_ai import eval as inspect_eval
+from inspect_ai.model import GenerateConfig
 
+from runner.endpoint import EndpointError, vllm_model_metadata
+
+ALLOWED = ("task", "model", "generate_config", "metadata", "model_info_fields")
 REQUIRED = (
     "task",
     "model",
@@ -46,7 +57,19 @@ def load_and_check(path: str | Path) -> dict[str, Any]:
     missing = [f for f in REQUIRED if _get(cfg, f) is None]
     if missing:
         raise PreflightError(f"run config is missing required field(s): {', '.join(missing)}")
+    unknown = [k for k in cfg if k not in ALLOWED]
+    unknown += [
+        f"generate_config.{k}" for k in cfg["generate_config"] if k not in GenerateConfig.model_fields
+    ]
+    if unknown:
+        raise PreflightError(f"run config has unknown field(s): {', '.join(unknown)}")
     return cfg
+
+
+def run_metadata(cfg: dict[str, Any]) -> dict[str, Any]:
+    """Metadata for the EvalLog: the config's own, plus the endpoint's for vllm models."""
+    endpoint = vllm_model_metadata(cfg["model"], tuple(cfg.get("model_info_fields", ())))
+    return {**cfg["metadata"], **(endpoint or {})}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -54,16 +77,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("config")
     args = parser.parse_args(argv)
 
+    load_dotenv()
     try:
         cfg = load_and_check(args.config)
-    except (PreflightError, OSError, yaml.YAMLError) as e:
+        metadata = run_metadata(cfg)
+    except (PreflightError, EndpointError, OSError, yaml.YAMLError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 2
 
     logs = inspect_eval(
         cfg["task"],
         model=cfg["model"],
-        metadata=cfg["metadata"],
+        metadata=metadata,
         **cfg["generate_config"],
     )
     return 0 if all(log.status == "success" for log in logs) else 1

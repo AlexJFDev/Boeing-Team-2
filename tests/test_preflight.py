@@ -1,10 +1,13 @@
 import copy
+import json
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 import yaml
 from inspect_ai.log import list_eval_logs, read_eval_log
 
-from runner.preflight import main
+from runner.preflight import main, run_metadata
 
 COMPLETE = {
     "task": "tasks/smoke_test.py",
@@ -60,3 +63,54 @@ def test_zero_is_not_missing(tmp_path, monkeypatch):
     cfg = copy.deepcopy(COMPLETE)
     cfg["generate_config"]["seed"] = 0
     assert _run(tmp_path, cfg, monkeypatch) == 0
+
+
+def test_unknown_top_level_key_refused_and_named(tmp_path, monkeypatch, capsys):
+    cfg = copy.deepcopy(COMPLETE)
+    cfg["limit"] = 1
+    assert _run(tmp_path, cfg, monkeypatch) == 2
+    assert "limit" in capsys.readouterr().err
+    assert _logs(tmp_path) == []
+
+
+def test_unknown_generate_config_key_refused_and_named(tmp_path, monkeypatch, capsys):
+    cfg = copy.deepcopy(COMPLETE)
+    cfg["generate_config"]["temprature"] = 0
+    assert _run(tmp_path, cfg, monkeypatch) == 2
+    assert "generate_config.temprature" in capsys.readouterr().err
+    assert _logs(tmp_path) == []
+
+
+def test_unreachable_vllm_endpoint_refused_before_any_log(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("VLLM_BASE_URL", "http://127.0.0.1:9/v1")
+    cfg = copy.deepcopy(COMPLETE)
+    cfg["model"] = "vllm/test-model"
+    assert _run(tmp_path, cfg, monkeypatch) == 2
+    assert "could not reach" in capsys.readouterr().err
+    assert _logs(tmp_path) == []
+
+
+def test_endpoint_info_is_merged_into_run_metadata(monkeypatch):
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(
+                json.dumps({"data": [{"id": "test-model", "info": {"updated_at": 2000}}]}).encode()
+            )
+
+        def log_message(self, format, *args):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    monkeypatch.setenv("VLLM_BASE_URL", f"http://127.0.0.1:{server.server_port}/v1")
+    cfg = copy.deepcopy(COMPLETE)
+    cfg["model"] = "vllm/test-model"
+    cfg["model_info_fields"] = ["info.updated_at"]
+    try:
+        meta = run_metadata(cfg)
+    finally:
+        server.shutdown()
+    assert meta["corpus_version"] == "synthetic-0.1.0"
+    assert meta["endpoint_model"]["info.updated_at"] == 2000
