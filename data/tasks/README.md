@@ -6,6 +6,7 @@ B ARINC 429, C ARINC 664, D ACARS); the item type such as A1 goes in `metadata`.
 
 | File | Contents |
 | --- | --- |
+| `a1_adsb_decode_v1.0.0.jsonl` | A1 ADS-B identification and altitude decode (WBS 2.5, 29 tasks): 13 identification frames (10 DF17, 3 DF18), one altitude frame per synthetic track (10), and 6 parity failures to reject. Built by `scripts/adsb/build_a1_tasks.py`; targets come from pyModeS and are re-checked against it every time the task is built (`python -m bench.adsb.a1`). |
 | `loader_demo_v0.1.0.jsonl` | Three ADS-B tasks that exercise the loader (valid decode, parity failure, single CPR frame with a per-task premise). A demo, not part of the scored corpus; the A1/A2 tasks come from WBS 2.5 and 2.6. |
 | `a2_cpr_position_v1.0.0.jsonl` | A2 ADS-B CPR position decode (WBS 2.6, 28 tasks): 10 global even/odd pairs, 10 local decodes against a stated receiver position, 2 stale pairs (over 10 s apart), 4 same-format pairs and 2 single frames with no reference. The last three kinds have the target `{"answer":"cannot_be_determined"}`. Built by `scripts/adsb/build_a2_tasks.py`; targets come from the CPR verifier (`bench/adsb/cpr.py`) and are re-checked against it every time the task is built (`python -m bench.adsb.a2`). |
 
