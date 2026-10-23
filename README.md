@@ -66,7 +66,7 @@ inspect eval tasks/smoke_test.py --model mockllm/model
 | Path | Contents |
 | --- | --- |
 | `tasks/` | Inspect AI tasks; currently the install smoke test |
-| `bench/` | Runner package; `bench/adsb/cpr.py` is the independent CPR position verifier |
+| `bench/` | Runner package; `bench/adsb/oracle.py` is the pyModeS ground-truth oracle, `bench/adsb/cpr.py` the independent CPR position verifier |
 | `data/` | Versioned task data with manifests; `data/adsb/` holds the ADS-B frame set |
 | `scripts/` | Build tools that generate the data, e.g. `scripts/adsb/build_frames.py` |
 | `tests/` | pytest suite (`pytest` from the repo root) |
@@ -98,4 +98,8 @@ Sprint 1 runs Sep 27 to Oct 11, 2026; the full plan runs to the Dec 6 symposium.
 
 ## Team
 
-Alex Fuhrig, Adam Futerman, Kean Jaldin Guzman, Kayrene Woods, Sahiti Srikakolapu.
+Alex Fuhrig (GitHub: )
+Adam Futerman (GitHub: )
+Kean Jaldin Guzman (GitHub: )
+Kayrene Woods (GitHub: kaykayzara)
+Sahiti Srikakolapu (GitHub: )

@@ -1,0 +1,10 @@
+#!/bin/sh
+# Print the installed tool versions in lockfile format, one per line, so they
+# can be compared directly with apt.lock and requirements.lock.
+set -eu
+dpkg-query -W -f='${Package}=${Version}\n' tshark
+python - <<'PY'
+from importlib.metadata import version
+for name in ("pyModeS", "scapy"):
+    print(f"{name}=={version(name)}")
+PY

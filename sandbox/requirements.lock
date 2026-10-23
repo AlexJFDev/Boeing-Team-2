@@ -1,0 +1,9 @@
+# Python packages installed in the sandbox image (WBS 1.8).
+# Exact versions with wheel hashes; the build installs with --require-hashes,
+# so a missing or altered release fails the build instead of resolving to
+# something else. pyModeS must match the reference decoder version recorded in
+# data/adsb/MANIFEST.json.
+pyModeS==3.6.0 \
+    --hash=sha256:c508f4731c7aa39b7ab9eb34d5d56fe853f8d425be85638f528bac6e02ec23f5
+scapy==2.8.0 \
+    --hash=sha256:abf855145ee829a42b2eb28983cd6a0a52b12a31d3f861cb7be36791195ed9aa
