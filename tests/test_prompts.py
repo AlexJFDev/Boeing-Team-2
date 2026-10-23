@@ -42,6 +42,23 @@ def test_hash_and_version_recorded_in_evallog(tmp_path: Path):
     assert len(template.sha256) == 64
 
 
+def test_template_is_the_system_message_and_user_message_is_unchanged(tmp_path: Path):
+    template = load_prompt_template(NAME, 1)
+    [log] = eval(
+        versioned_prompt_example(),
+        model="mockllm/model",
+        log_dir=str(tmp_path),
+        temperature=0.0,
+        seed=1,
+    )
+    assert log.samples is not None
+    roles = [(m.role, m.text) for m in log.samples[0].messages[:2]]
+    assert roles == [
+        ("system", template.text),
+        ("user", "Reply with the single word: ready"),
+    ]
+
+
 def test_edit_without_version_bump_is_refused(prompts_copy: Path):
     path = prompts_copy / f"{NAME}.v1.txt"
     path.write_text(path.read_text() + "Be polite.\n")
@@ -53,7 +70,7 @@ def test_refused_run_makes_no_model_call_and_writes_no_log(
     prompts_copy: Path, tmp_path: Path
 ):
     path = prompts_copy / f"{NAME}.v1.txt"
-    path.write_text("tampered {prompt}\n")
+    path.write_text("tampered\n")
     log_dir = tmp_path / "logs"
     with pytest.raises(PromptTemplateError):
         eval(versioned_prompt_example(), model="mockllm/model", log_dir=str(log_dir))
@@ -61,14 +78,14 @@ def test_refused_run_makes_no_model_call_and_writes_no_log(
 
 
 def test_unregistered_version_is_refused(prompts_copy: Path):
-    (prompts_copy / f"{NAME}.v2.txt").write_text("New.\n{prompt}\n")
+    (prompts_copy / f"{NAME}.v2.txt").write_text("New.\n")
     with pytest.raises(PromptTemplateError, match="not in manifest"):
         load_prompt_template(NAME, 2)
 
 
 def test_registered_new_version_loads_with_new_hash(prompts_copy: Path):
     v2 = prompts_copy / f"{NAME}.v2.txt"
-    v2.write_text("New.\n{prompt}\n")
+    v2.write_text("New.\n")
     manifest_path = prompts_copy / "manifest.json"
     manifest = json.loads(manifest_path.read_text())
     manifest[NAME]["2"] = hash_bytes(v2.read_bytes())

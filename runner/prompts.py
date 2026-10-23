@@ -6,6 +6,8 @@ text means adding a new file with the next version, never editing the old one.
 a template whose hash does not match the manifest, or that has no entry, is
 refused before any model call.
 
+A template is a system message, never a rewrite of the user message: the task text
+stays identical across templates, so the hash covers only the part that varies.
 Inspect supplies the solvers and logs the template text; this module only adds
 the version, the hash and the refusal.
 """
@@ -15,7 +17,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from inspect_ai.solver import Solver, generate, prompt_template, system_message
+from inspect_ai.solver import Solver, generate, system_message
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 MANIFEST_NAME = "manifest.json"
@@ -40,17 +42,13 @@ class PromptTemplate:
             "prompt_template_sha256": self.sha256,
         }
 
-    def solver(self, kind: str = "prompt") -> list[Solver]:
-        """Inspect's own solvers: the template, then ``generate()``.
+    def solver(self) -> list[Solver]:
+        """Inspect's own solvers: the template as a system message, then ``generate()``.
 
-        ``kind="prompt"`` wraps the user prompt (use ``{prompt}`` in the text);
-        ``kind="system"`` sets the system message.
+        The user message is the task's own text, unchanged. Inspect fills ``{...}``
+        in the text from sample metadata, so write a literal brace as ``{{`` or ``}}``.
         """
-        if kind == "prompt":
-            return [prompt_template(self.text), generate()]
-        if kind == "system":
-            return [system_message(self.text), generate()]
-        raise ValueError(f"kind must be 'prompt' or 'system', not {kind!r}")
+        return [system_message(self.text), generate()]
 
 
 def hash_bytes(raw: bytes) -> str:
