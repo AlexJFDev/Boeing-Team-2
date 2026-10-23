@@ -39,6 +39,9 @@ pip install -r requirements.txt
 `requirements.txt` pins exact versions so everyone runs the same Inspect AI.
 Do not upgrade packages on your own; open an issue and bump the pin in a PR.
 
+`requirements.txt` also installs this repo's own packages (`bench`, `runner`) in editable
+mode, so tasks loaded by `inspect eval` can import them without setting `PYTHONPATH`.
+
 In VS Code, the workspace settings select `.venv` automatically. Accept the
 recommended extensions when prompted.
 
