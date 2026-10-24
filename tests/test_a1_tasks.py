@@ -210,12 +210,15 @@ def test_sample_without_a_frame_fails() -> None:
 
 
 def test_task_refuses_to_build_from_a_bad_file(tmp_path: Path, monkeypatch) -> None:
+    import functools
+    from bench.loader import load_tasks
     lines = a1.TASK_FILE.read_text().splitlines()
     record = json.loads(lines[0])
     record["target"] = record["target"].replace("ZZZ101", "ZZZ102")
     bad_file = tmp_path / "a1_bad.jsonl"
     bad_file.write_text("\n".join([json.dumps(record), *lines[1:]]) + "\n")
     monkeypatch.setattr("tasks.a1_adsb_decode.TASK_FILE", bad_file)
+    monkeypatch.setattr("tasks.a1_adsb_decode.load_tasks", functools.partial(load_tasks, verify=False))
     with pytest.raises(a1.A1ValidationError, match="a1-adsb-0001"):
         a1_adsb_decode()
 
