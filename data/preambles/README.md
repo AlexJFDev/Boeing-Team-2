@@ -28,6 +28,9 @@ the task ID.
   (`adsb_v1.1.0.txt`), make the change, and point the tasks at the new name.
 - Files live under `data/`, which `.gitattributes` marks `-text`, so line endings
   (and therefore hashes) are the same on every machine.
+- Every preamble is listed with its sha256 in `MANIFEST.json` (WBS 1.14), and a task
+  that uses an edited or unlisted preamble fails to load. Add a new one with
+  `python -m bench.corpus --add data/preambles/<family>_vX.Y.Z.txt`.
 
 ## adsb_v1.0.0 sources
 
