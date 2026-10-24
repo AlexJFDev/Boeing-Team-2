@@ -11,3 +11,4 @@ logs/
 # Personal agent instructions (per-developer, not shared)
 CLAUDE.local.md
 .env
+data/afdx/
