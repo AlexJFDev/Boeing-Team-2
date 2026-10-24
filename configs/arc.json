@@ -1,0 +1,7 @@
+{
+  "model": "vllm/gpt-oss-120b",
+  "temperature": 0,
+  "seed": 42,
+  "max_tokens": 256,
+  "model_info_fields": ["info.created_at", "info.updated_at"]
+}

@@ -3,15 +3,20 @@
     python -m runner.run configs/baseline.json tasks/smoke_test.py [--model mockllm/model]
 
 The config is validated before anything starts; a missing ``temperature`` or
-``seed`` aborts with a message naming the field.
+``seed`` aborts with a message naming the field. For ``vllm/...`` models the
+endpoint is queried first, so an unreachable endpoint aborts before any log is
+written, and what it lists for the model is recorded in the log (``model_info_fields`` in the
+config names extra endpoint-specific fields).
 """
 
 import argparse
 import sys
 
+from dotenv import load_dotenv
 from inspect_ai import eval as inspect_eval
 
 from runner.config import RunConfigError, load_run_config
+from runner.endpoint import EndpointError, vllm_model_metadata
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -27,9 +32,18 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {e}", file=sys.stderr)
         return 2
 
+    model = args.model or cfg.model
+    load_dotenv()
+    try:
+        metadata = vllm_model_metadata(model, cfg.model_info_fields)
+    except EndpointError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+
     logs = inspect_eval(
         args.task,
-        model=args.model or cfg.model,
+        model=model,
+        metadata=metadata,
         temperature=cfg.temperature,
         seed=cfg.seed,
         max_tokens=cfg.max_tokens,
