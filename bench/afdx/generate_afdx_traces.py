@@ -1,6 +1,6 @@
 """Generate labeled AFDX scenarios: one pcap per network + a ground-truth JSON each.
 
-    python generate_afdx_traces.py [out_dir]        (default: ./data/afdx)
+    python -m bench.afdx.generate_afdx_traces [out_dir]        (default: <repo>/data/afdx)
 
 Layout:  out_dir/pcap/<id>_netA.pcap, <id>_netB.pcap   (captured per network, as in real life)
          out_dir/truth/<id>.json                       (config, preamble, labels, decisions)
@@ -18,7 +18,6 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-
 from scapy.layers.l2 import Ether
 from scapy.utils import wrpcap
 
@@ -30,11 +29,12 @@ N = 40                      # logical frames per VL (each sent on A and B)
 BAGS = (2, 8, 32, 128)
 SEEDS_PER_KIND = 2
 N_MIXED = 40
+N_MIXED_BENIGN = 16         # multi-VL traces with NO anomalies requested (zero violations expected)
 PAYLOAD = 64
 UDP_PAYLOAD_OFF = 42
 
 
-# ------------------------------------------------------------------ building blocks
+# building blocks
 def make_vl(vl_id: int, bag: int, rng: random.Random) -> dict:
     return {
         "vl_id": vl_id, "name": f"vl_{vl_id}", "bag_ms": bag, "lmax_bytes": 128,
@@ -64,7 +64,7 @@ def frames_of(row):
     return [f for f in row.values() if f is not None]
 
 
-# ------------------------------------------------------------------ events
+# events
 # Each event mutates one VL's stream `st` and may return extra frames.
 def ev_clean(st, vl, rng):
     return []
@@ -208,7 +208,7 @@ BENIGN_KINDS = ["late_frame_gap", "skew_offset_within_limit", "single_frame_loss
                 "network_dropout"]
 
 
-# ------------------------------------------------------------------ rendering
+# rendering
 def render(f: dict, rng: random.Random) -> bytes:
     vl = dict(f["vl_cfg"])
     if f["src_user"] is not None:
@@ -255,7 +255,7 @@ def preamble(vls: list[dict], rule: str) -> str:
     return "\n".join(lines)
 
 
-def write_scenario(sid, kind, category, vls, rows_by_vl, extras, rule, rng, out: Path):
+def write_scenario(sid, kind, category, vls, rows_by_vl, extras, rule, rng, out: Path, seed=None):
     frames = [f for rows in rows_by_vl for row in rows for f in frames_of(row)] + extras
     for o, f in enumerate(frames):
         f["order"] = o
@@ -306,7 +306,7 @@ def write_scenario(sid, kind, category, vls, rows_by_vl, extras, rule, rng, out:
     requested = [k for k in kind.removeprefix("mixed:").split("+") if k in ANOMALY_KINDS]
 
     truth = {
-        "scenario_id": sid, "kind": kind, "category": category, "resync_rule": rule,
+        "scenario_id": sid, "kind": kind, "category": category, "resync_rule": rule, "seed": seed,
         "anomalies_requested": requested,
         "violations": violations,
         "config": {"schema_version": "1.0",
@@ -318,13 +318,17 @@ def write_scenario(sid, kind, category, vls, rows_by_vl, extras, rule, rng, out:
     }
     (out / "truth" / f"{sid}.json").write_text(json.dumps(truth, indent=1) + "\n")
     return {
-        "id": sid, "kind": kind, "category": category, "frames": len(frames),
-        "anomalous_frames": sum(bool(f["labels"]) for f in frames),
+        "id": sid, "kind": kind, "category": category, "seed": seed, "resync_rule": rule,
+        "vl_ids": [v["vl_id"] for v in vls], "bags_ms": [v["bag_ms"] for v in vls],
+        "frames": len(frames),
+        "anomalous_frames": sum(bool(f["labels"]) for f in frames),   # labeled frames, not events
         "benign_oddity_frames": sum(bool(f["benign"]) for f in frames),
+        "violations": len(violations),                                 # entries in truth["violations"]
+        "violations_by_kind": dict(Counter(v["kind"] for v in violations)),
     }
 
 
-# ------------------------------------------------------------------ scenario sets
+# scenario sets
 def single_scenarios(out: Path, manifest: list):
     n = 0
     for kind in EVENTS:
@@ -332,7 +336,8 @@ def single_scenarios(out: Path, manifest: list):
         for bi, bag in enumerate(BAGS):
             for seed in range(SEEDS_PER_KIND):
                 n += 1
-                rng = random.Random(f"{kind}-{bag}-{seed}")
+                seed_str = f"{kind}-{bag}-{seed}"
+                rng = random.Random(seed_str)
                 vl1, vl2 = make_vl(100, bag, rng), make_vl(101, BAGS[(bi + 1) % len(BAGS)], rng)
                 if kind in PRE:
                     PRE[kind](vl1, rng)
@@ -340,27 +345,48 @@ def single_scenarios(out: Path, manifest: list):
                 extras = EVENTS[kind](st1, vl1, rng)
                 rule = oracle.RESYNC_RULES[(bi + seed) % 2]
                 sid = f"S{n:03d}_{kind}_bag{bag}_s{seed}"
-                manifest.append(write_scenario(sid, kind, category, [vl1, vl2], [st1, st2], extras, rule, rng, out))
+                manifest.append(write_scenario(sid, kind, category, [vl1, vl2], [st1, st2], extras, rule, rng, out,
+                                               seed=seed_str))
+
+
+def build_mixed(out: Path, manifest: list, rng, seed: str, kinds: list, category: str, sid: str, rule: str):
+    """One multi-VL trace: a VL per event kind in `kinds`."""
+    vls = [make_vl(200 + i, rng.choice(BAGS), rng) for i in range(len(kinds))]
+    for vl, kind in zip(vls, kinds):
+        if kind in PRE:
+            PRE[kind](vl, rng)
+    streams = [make_stream(vl) for vl in vls]
+    extras = []
+    for vl, st, kind in zip(vls, streams, kinds):
+        extras += EVENTS[kind](st, vl, rng)
+    manifest.append(write_scenario(sid, "mixed:" + "+".join(kinds), category, vls, streams, extras, rule, rng, out,
+                                   seed=seed))
 
 
 def mixed_scenarios(out: Path, manifest: list):
-    """A4-style triage traces: 4 VLs, one event each (2 anomalies, 1 benign look-alike, 1 clean/benign)."""
+    """A4-style triage traces: 4 VLs, one event each (2 anomalies, 1 benign look-alike, 1 clean/benign).
+    The four kinds are always distinct."""
     for m in range(N_MIXED):
-        rng = random.Random(f"mixed-{m}")
-        kinds = rng.sample(ANOMALY_KINDS, 2) + [rng.choice(BENIGN_KINDS), rng.choice(BENIGN_KINDS + ["clean"])]
+        seed = f"mixed-{m}"
+        rng = random.Random(seed)
+        anomalies = rng.sample(ANOMALY_KINDS, 2)
+        first = rng.choice(BENIGN_KINDS)
+        second = rng.choice([k for k in BENIGN_KINDS + ["clean"] if k != first])
+        kinds = anomalies + [first, second]
         rng.shuffle(kinds)
-        vls = [make_vl(200 + i, rng.choice(BAGS), rng) for i in range(4)]
-        for vl, kind in zip(vls, kinds):
-            if kind in PRE:
-                PRE[kind](vl, rng)
-        streams = [make_stream(vl) for vl in vls]
-        extras = []
-        for vl, st, kind in zip(vls, streams, kinds):
-            extras += EVENTS[kind](st, vl, rng)
-        rule = oracle.RESYNC_RULES[m % 2]
-        sid = f"M{m + 1:02d}_mixed"
-        entry = write_scenario(sid, "mixed:" + "+".join(kinds), "mixed", vls, streams, extras, rule, rng, out)
-        manifest.append(entry)
+        build_mixed(out, manifest, rng, seed, kinds, "mixed", f"M{m + 1:02d}_mixed", oracle.RESYNC_RULES[m % 2])
+
+
+def mixed_benign_scenarios(out: Path, manifest: list):
+    """Multi-VL traces with NO anomalies requested: 4 VLs, four distinct conformant events (or clean).
+    Zero violations are expected in every one of them."""
+    pool = BENIGN_KINDS + ["clean"]
+    for m in range(N_MIXED_BENIGN):
+        seed = f"mixed-benign-{m}"
+        rng = random.Random(seed)
+        kinds = rng.sample(pool, 4)
+        build_mixed(out, manifest, rng, seed, kinds, "mixed_benign", f"MB{m + 1:02d}_mixed_benign",
+                    oracle.RESYNC_RULES[m % 2])
 
 
 def main(out_dir: str | None = None):
@@ -370,15 +396,30 @@ def main(out_dir: str | None = None):
     manifest: list = []
     single_scenarios(out, manifest)
     mixed_scenarios(out, manifest)
+    mixed_benign_scenarios(out, manifest)
+    by_violation_kind: Counter = Counter()
+    for m in manifest:
+        by_violation_kind.update(m["violations_by_kind"])
     summary = {
         "scenarios": len(manifest),
         "frames_total": sum(m["frames"] for m in manifest),
         "anomalous_frames": sum(m["anomalous_frames"] for m in manifest),
         "benign_oddity_frames": sum(m["benign_oddity_frames"] for m in manifest),
+        "violations_total": sum(m["violations"] for m in manifest),
+        "by_violation_kind": dict(by_violation_kind),
         "by_category": dict(Counter(m["category"] for m in manifest)),
-        "by_kind": dict(Counter(m["kind"] for m in manifest if m["category"] != "mixed")),
+        "by_kind": dict(Counter(m["kind"] for m in manifest if not m["category"].startswith("mixed"))),
     }
-    (out / "manifest.json").write_text(json.dumps({"summary": summary, "scenarios": manifest}, indent=1) + "\n")
+    generator = {
+        "schema_version": "1.0", "t0_epoch_s": T0, "frames_per_vl": N, "bags_ms": list(BAGS),
+        "seeds_per_kind": SEEDS_PER_KIND, "n_mixed": N_MIXED, "n_mixed_benign": N_MIXED_BENIGN,
+        "app_payload_bytes": PAYLOAD,
+        "anomaly_kinds": ANOMALY_KINDS, "benign_kinds": BENIGN_KINDS,
+        "seeding": "each scenario uses random.Random(<seed string>); the seed is recorded per scenario",
+        "timestamps": "violation t_s / t_us are relative to trace start; pcap time = t0_epoch_s + t_s",
+    }
+    doc = {"generator": generator, "summary": summary, "scenarios": manifest}
+    (out / "manifest.json").write_text(json.dumps(doc, indent=1) + "\n")
     print(json.dumps(summary, indent=1))
 
 

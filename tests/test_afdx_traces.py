@@ -5,6 +5,7 @@ pcap bytes alone. Any disagreement is a bug in one of them. Run the generator fi
     python generate_afdx_traces.py
 """
 import json
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -32,13 +33,14 @@ def labeled(truth, label):
     return {f["id"] for f in truth["frames"] if label in f["labels"]}
 
 
-# ---------------------------------------------------------------- corpus-level
+# corpus-level
 def test_corpus_size_and_coverage():
     s = MANIFEST["summary"]
     assert s["scenarios"] >= 150
     assert s["frames_total"] >= 30000
     assert s["by_category"]["anomaly"] >= 50 and s["by_category"]["benign"] >= 30
     assert s["by_category"]["mixed"] >= 30 and s["by_category"]["clean"] >= 5
+    assert s["by_category"]["mixed_benign"] >= 10
     assert all(n >= 8 for n in s["by_kind"].values())
 
 
@@ -48,7 +50,7 @@ def test_config_in_every_scenario_passes_schema_validation(sid):
     assert afdx.validate_config(truth["config"]) == []
 
 
-# ---------------------------------------------------------------- label vs oracle
+# label vs oracle
 @pytest.mark.parametrize("sid", IDS)
 def test_oracle_detectors_match_labels_exactly(sid):
     truth, frames, vls = load(sid)
@@ -74,7 +76,7 @@ def test_benign_oddities_are_never_flagged_by_detectors(sid):
     assert not (flagged & benign), "a benign look-alike tripped a detector"
 
 
-# ---------------------------------------------------------------- sequence / redundancy
+# sequence / redundancy
 @pytest.mark.parametrize("sid", [s["id"] for s in MANIFEST["scenarios"] if s["kind"] in ("sn_gap", "sn_replay")])
 def test_sn_anomaly_frames_are_dropped_by_integrity_check_under_both_rules(sid):
     truth, _, _ = load(sid)
@@ -126,7 +128,7 @@ def test_network_dropout_makes_resync_rule_matter_for_b_only():
         assert all(f["decisions"]["drop_with_resync"]["ic"] == "accept" for f in a_frames)
 
 
-# ---------------------------------------------------------------- oracle self-tests
+# oracle self-tests
 def test_nxt_wraps_255_to_1_and_skips_zero():
     assert oracle.nxt(255) == 1 and oracle.nxt(254, 2) == 1 and oracle.nxt(255, 2) == 2
     assert oracle.in_window(254, 255) and oracle.in_window(254, 1) and not oracle.in_window(254, 2)
@@ -146,7 +148,7 @@ def oracle_t0(frames):
     return T0
 
 
-# ---------------------------------------------------------------- backlog acceptance criteria
+# backlog acceptance criteria
 TIMING_KINDS = ("bag_violation", "skew_violation")
 
 
@@ -183,7 +185,7 @@ def test_oracle_timing_violations_match_labeled_timestamps(sid):
             assert abs(t_got - t_want) <= 1               # within one pcap microsecond
 
 
-@pytest.mark.parametrize("sid", [s["id"] for s in MANIFEST["scenarios"] if s["category"] in ("clean", "benign")])
+@pytest.mark.parametrize("sid", [s["id"] for s in MANIFEST["scenarios"] if s["category"] in ("clean", "benign", "mixed_benign")])
 def test_no_anomalies_requested_means_zero_violations(sid):
     """AC2: a trace generated without anomalies has no labels and the oracle finds none."""
     truth, frames, vls = load(sid)
@@ -201,3 +203,54 @@ def test_requested_anomalies_are_all_recorded():
         truth, _, _ = load(s["id"])
         assert truth["anomalies_requested"]
         assert {v["kind"] for v in truth["violations"]} == set(truth["anomalies_requested"])
+
+
+# manifest and corpus design
+def _truth_json(sid):
+    return json.loads((ROOT / "truth" / f"{sid}.json").read_text())
+
+
+def test_manifest_counts_match_truth_files():
+    """The manifest's violation counts, seeds and VLs are the truth files' own."""
+    total, by_kind = 0, Counter()
+    for s in MANIFEST["scenarios"]:
+        truth = _truth_json(s["id"])
+        assert s["violations"] == len(truth["violations"])
+        assert s["violations_by_kind"] == dict(Counter(v["kind"] for v in truth["violations"]))
+        assert s["seed"] == truth["seed"] and s["seed"]
+        assert s["resync_rule"] == truth["resync_rule"]
+        assert s["vl_ids"] == [v["vl_id"] for v in truth["config"]["virtual_links"]]
+        assert s["bags_ms"] == [v["bag_ms"] for v in truth["config"]["virtual_links"]]
+        total += s["violations"]
+        by_kind.update(s["violations_by_kind"])
+    assert MANIFEST["summary"]["violations_total"] == total > 0
+    assert MANIFEST["summary"]["by_violation_kind"] == dict(by_kind)
+
+
+def test_manifest_records_generator_settings():
+    g = MANIFEST["generator"]
+    for key in ("schema_version", "t0_epoch_s", "frames_per_vl", "bags_ms", "seeds_per_kind", "n_mixed",
+                "n_mixed_benign", "app_payload_bytes", "anomaly_kinds", "benign_kinds", "seeding", "timestamps"):
+        assert key in g, key
+    assert g["t0_epoch_s"] == T0
+    singles = (len(g["anomaly_kinds"]) + len(g["benign_kinds"]) + 1) * len(g["bags_ms"]) * g["seeds_per_kind"]
+    assert MANIFEST["summary"]["scenarios"] == singles + g["n_mixed"] + g["n_mixed_benign"]
+
+
+def test_mixed_traces_use_four_distinct_event_kinds():
+    seen = 0
+    for s in MANIFEST["scenarios"]:
+        if s["category"] in ("mixed", "mixed_benign"):
+            kinds = s["kind"].removeprefix("mixed:").split("+")
+            assert len(kinds) == 4 and len(set(kinds)) == 4, s["id"]
+            seen += 1
+    assert seen >= 50
+
+
+def test_zero_violation_coverage_includes_multi_vl_traces():
+    """AC2 is exercised on single-event traces AND on 4-VL traces with several conformant oddities."""
+    mb = [s for s in MANIFEST["scenarios"] if s["category"] == "mixed_benign"]
+    assert len(mb) >= 10
+    for s in mb:
+        assert len(s["vl_ids"]) == 4 and s["violations"] == 0 and s["anomalous_frames"] == 0
+    assert sum(s["benign_oddity_frames"] for s in mb) > 0      # the look-alikes are really there
