@@ -1,3 +1,17 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# Makes `bench` and `runner` importable wherever Inspect loads a task from.
+# Dependencies stay pinned in requirements.txt, which installs this package with `-e .`.
+name = "boeing-team-2"
+version = "0.0.0"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+include = ["bench*", "runner*"]
+
 [tool.pytest.ini_options]
 # Make the repo root importable so tests can `import bench`.
 pythonpath = ["."]
