@@ -7,7 +7,7 @@ import logging
 import re
 from typing import Any, Dict, Optional
 
-from inspect_ai.scorer import Score, Scorer, Target, accuracy, scorer, stderr
+from inspect_ai.scorer import Score, Scorer, Target, accuracy, mean, scorer, stderr
 from inspect_ai.solver import TaskState
 
 SCORER_VERSION = "2.0.0"
@@ -64,7 +64,7 @@ def deterministic_exact_match() -> Scorer:
 # ---------------------------------------------------------------------------
 
 def parse_adsb_json_or_kv(raw_text: str | None) -> Optional[Dict[str, Any]]:
-    """Extract fields from JSON blocks, raw JSON, or key-value text lines.
+    """Extract fields from JSON blocks, prose, or key-value text lines.
 
     Returns None if the completion cannot be parsed into structured fields.
     """
@@ -73,18 +73,17 @@ def parse_adsb_json_or_kv(raw_text: str | None) -> Optional[Dict[str, Any]]:
 
     cleaned = raw_text.strip()
 
-    # 1. Look for markdown JSON code block
-    json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned, re.DOTALL)
-    candidate_str = json_match.group(1) if json_match else cleaned
+    # 1. Extract JSON object from markdown block or embedded in prose
+    match = re.search(r"\{.*?\}", cleaned, re.DOTALL)
+    if match:
+        try:
+            data = json.loads(match.group(0))
+            if isinstance(data, dict):
+                return {str(k).strip().lower(): v for k, v in data.items()}
+        except json.JSONDecodeError:
+            pass
 
-    try:
-        data = json.loads(candidate_str)
-        if isinstance(data, dict):
-            return {str(k).strip().lower(): v for k, v in data.items()}
-    except json.JSONDecodeError:
-        pass
-
-    # 2. Fallback: Parse key-value lines
+    # 2. Fallback: Parse key-value lines (e.g. icao: a12345 or altitude_ft = 35000)
     kv_pattern = re.findall(r"^([a-zA-Z0-9_]+)\s*[:=]\s*(.+)$", cleaned, re.MULTILINE)
     if kv_pattern:
         return {k.strip().lower(): v.strip() for k, v in kv_pattern}
@@ -92,16 +91,28 @@ def parse_adsb_json_or_kv(raw_text: str | None) -> Optional[Dict[str, Any]]:
     return None
 
 
-@scorer(metrics=[])
-def adsb_field_capability_scorer() -> Scorer:
-    """ADS-B field-level capability scorer (Sprint 2 Issue #51).
+def field_matches(actual_val: Any, expected_val: Any, key: str) -> bool:
+    """Compare fields with numeric casting and tolerance for track_deg."""
+    if actual_val is None or expected_val is None:
+        return actual_val == expected_val
 
-    Acceptance criteria:
-    - Capability only; never combined with safety.
-    - When correct in every field, returns full capability credit (1.0) with per-field results.
-    - When unparseable, returns 0.0 credit and retains raw_response in metadata so it can be rescored.
-    - When partially correct, returns proportional field-level credit.
-    """
+    # Angular tolerance for track_deg
+    if key == "track_deg":
+        try:
+            return abs(float(actual_val) - float(expected_val)) <= 1.0
+        except (ValueError, TypeError):
+            pass
+
+    # Numeric comparison
+    try:
+        return float(actual_val) == float(expected_val)
+    except (ValueError, TypeError):
+        return normalize_str(str(actual_val)) == normalize_str(str(expected_val))
+
+
+@scorer(metrics=[mean(), stderr()])
+def adsb_field_capability_scorer() -> Scorer:
+    """ADS-B field-level capability scorer (Sprint 2 Issue #51)."""
 
     async def score(state: TaskState, target: Target) -> Score:
         raw_output = state.output.completion if state.output else ""
@@ -109,6 +120,8 @@ def adsb_field_capability_scorer() -> Scorer:
         # Parse ground-truth target JSON dictionary
         try:
             expected_fields: Dict[str, Any] = json.loads(target.text)
+            if not isinstance(expected_fields, dict):
+                expected_fields = {"answer": target.text}
         except (TypeError, json.JSONDecodeError):
             expected_fields = {"answer": target.text}
 
@@ -132,27 +145,39 @@ def adsb_field_capability_scorer() -> Scorer:
                 },
             )
 
-        # Evaluate each expected field
+        # Handle rejection targets
+        if expected_fields.get("answer") == "reject":
+            is_reject = parsed_output.get("answer") == "reject"
+            return Score(
+                value=1.0 if is_reject else 0.0,
+                answer=json.dumps(parsed_output),
+                explanation="Rejection target check.",
+                metadata={
+                    "parseable": True,
+                    "raw_response": raw_output,
+                    "per_field_results": {"answer": is_reject},
+                    "score_type": "capability_only",
+                    "scorer_version": SCORER_VERSION,
+                },
+            )
+
+        # Evaluate each expected field using oracle schema
         field_results: Dict[str, bool] = {}
         target_keys = {k.lower(): k for k in expected_fields.keys()}
 
         for norm_k, orig_k in target_keys.items():
-            expected_val = normalize_str(str(expected_fields[orig_k]))
-            actual_val = normalize_str(str(parsed_output.get(norm_k, "")))
-            field_results[orig_k] = (expected_val == actual_val)
+            expected_v = expected_fields[orig_k]
+            actual_v = parsed_output.get(norm_k)
+            field_results[orig_k] = field_matches(actual_v, expected_v, norm_k)
 
         total_fields = len(field_results)
         matched_fields = sum(1 for passed in field_results.values() if passed)
         accuracy_score = (matched_fields / total_fields) if total_fields > 0 else 0.0
 
-        explanation = (
-            f"Matched {matched_fields}/{total_fields} fields. Details: {field_results}"
-        )
-
         return Score(
             value=accuracy_score,
             answer=json.dumps(parsed_output),
-            explanation=explanation,
+            explanation=f"Matched {matched_fields}/{total_fields} fields. Details: {field_results}",
             metadata={
                 "parseable": True,
                 "raw_response": raw_output,
