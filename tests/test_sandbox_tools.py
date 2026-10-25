@@ -117,12 +117,12 @@ def test_bad_frame_is_refused_before_the_sandbox(bad: str, message: str) -> None
         check_frame(bad)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_decode_tool_refuses_bad_input_without_running_anything() -> None:
     """No sandbox exists in this test, so reaching sandbox().exec() would raise something else."""
+    tool = adsb_decode()
     with pytest.raises(ToolError, match="hexadecimal"):
-        await adsb_decode()("not-a-frame")
-
+        await tool("not-a-frame")
 
 def test_tools_off_means_no_tools_and_no_sandbox() -> None:
     from tasks.sandbox_tools_demo import sandbox_tools_demo

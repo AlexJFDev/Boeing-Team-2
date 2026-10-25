@@ -19,7 +19,7 @@ COPY apt.lock /opt/sandbox/
 
 # "pkg=version" makes apt exit non-zero when that exact version is not offered.
 RUN apt-get update \
-    && xargs -a /opt/sandbox/apt.lock apt-get install -y --no-install-recommends \
+    && tr -d '\r' < /opt/sandbox/apt.lock | xargs apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.lock /opt/sandbox/
