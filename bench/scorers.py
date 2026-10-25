@@ -11,6 +11,7 @@ from inspect_ai.solver import TaskState
 
 EXACT_MATCH_VERSION = "1.0.0"
 ADSB_SCORER_VERSION = "2.0.0"
+SCORER_VERSION = ADSB_SCORER_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +129,8 @@ def adsb_field_capability_scorer() -> Scorer:
     async def score(state: TaskState, target: Target) -> Score:
         raw_output = state.output.completion if state.output else ""
 
+        prov = extract_metric_provenance(state)
+        
         # Parse ground-truth target JSON dictionary
         try:
             expected_fields: Dict[str, Any] = json.loads(target.text)
@@ -153,6 +156,7 @@ def adsb_field_capability_scorer() -> Scorer:
                     "per_field_results": {},
                     "score_type": "capability_only",
                     "scorer_version": ADSB_SCORER_VERSION,
+                    **prov,
                 },
             )
 
@@ -170,6 +174,7 @@ def adsb_field_capability_scorer() -> Scorer:
                     "per_field_results": {"answer": is_matched},
                     "score_type": "capability_only",
                     "scorer_version": ADSB_SCORER_VERSION,
+                    **prov,
                 },
             )
 
@@ -196,7 +201,71 @@ def adsb_field_capability_scorer() -> Scorer:
                 "per_field_results": field_results,
                 "score_type": "capability_only",
                 "scorer_version": ADSB_SCORER_VERSION,
+                **prov
             },
         )
 
     return score
+
+# ---------------------------------------------------------------------------
+# Metric Provenance & Rescoring Hooks (Sprint 2, Task 7.3, Issue #89)
+# ---------------------------------------------------------------------------
+
+def extract_metric_provenance(state: TaskState) -> Dict[str, Any]:
+    """Extract provenance metadata from TaskState (checking state.store, then state.metadata).
+
+    Follows CLAUDE.md Rule 3: records None if fields are absent rather than
+    inventing synthetic run data.
+    """
+    prov: Dict[str, Any] = {}
+
+    # 1. Check state.store["provenance"] (if store is an actual dict)
+    store = getattr(state, "store", None)
+    if isinstance(store, dict):
+        store_prov = store.get("provenance")
+        if isinstance(store_prov, dict):
+            prov = store_prov
+
+    # 2. Fall back to state.metadata (if metadata is an actual dict and store had no provenance)
+    if not prov:
+        meta = getattr(state, "metadata", None)
+        if isinstance(meta, dict):
+            prov = meta
+
+    model_val = getattr(state, "model", None) or prov.get("model")
+
+    return {
+        "model": model_val,
+        "seed": prov.get("seed"),
+        "task_version": prov.get("task_version"),
+        "scorer_version": ADSB_SCORER_VERSION,
+        "corpus_hash": prov.get("corpus_hash"),
+        "prompt_template_hash": prov.get("prompt_template_hash"),
+    }
+
+
+async def rescore_raw_output(
+    scorer_fn: Scorer,
+    raw_response: str | None = None,
+    target_str: str | None = None,
+    provenance_metadata: Optional[Dict[str, Any]] = None,
+    # backward-compatible positional aliases
+    *args,
+    **kwargs,
+) -> Score:
+    """Reproduce an exact score from raw model output and target text."""
+    from unittest.mock import MagicMock
+
+    raw = raw_response if raw_response is not None else kwargs.get("raw_completion", "")
+    target_val = target_str if target_str is not None else kwargs.get("target_text", "")
+    prov = provenance_metadata if provenance_metadata is not None else kwargs.get("metadata", {})
+
+    dummy_state = MagicMock(spec=TaskState)
+    dummy_state.sample_id = "rescore-sample"
+    dummy_state.output = MagicMock()
+    dummy_state.output.completion = raw
+    dummy_state.store = {"provenance": prov or {}}
+    dummy_state.model = (prov or {}).get("model")
+
+    dummy_target = Target(target_val)
+    return await scorer_fn(dummy_state, dummy_target)

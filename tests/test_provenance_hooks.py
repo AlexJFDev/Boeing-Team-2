@@ -6,11 +6,12 @@ from inspect_ai.scorer import Target
 from inspect_ai.solver import TaskState
 
 from bench.scorers import (
+    ADSB_SCORER_VERSION,
     SCORER_VERSION,
     adsb_field_capability_scorer,
+    extract_metric_provenance,
     rescore_raw_output,
 )
-
 
 @pytest.mark.asyncio
 async def test_provenance_fields_in_scorer_metadata():
