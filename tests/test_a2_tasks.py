@@ -313,13 +313,15 @@ def test_every_failing_sample_is_reported() -> None:
 
 
 def test_task_refuses_to_build_from_a_bad_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import functools
+    from bench.loader import load_tasks
     lines = a2.TASK_FILE.read_text().splitlines()
     record = json.loads(next(line for line in lines if "stale-pair" in line))
     record["target"] = '{"latitude":52.6,"longitude":3.9}'
     bad_file = tmp_path / "a2_bad.jsonl"
-    bad_file.write_text("\n".join(json.dumps(record) if "stale-pair" in line and record["id"] in line
-                                  else line for line in lines) + "\n")
+    bad_file.write_text("\n".join(json.dumps(record) if "stale-pair" in line and record["id"] in line else line for line in lines) + "\n")
     monkeypatch.setattr("tasks.a2_cpr_position.TASK_FILE", bad_file)
+    monkeypatch.setattr("tasks.a2_cpr_position.load_tasks", functools.partial(load_tasks, verify=False))
     with pytest.raises(a2.A2ValidationError, match=record["id"]):
         a2_cpr_position()
 
