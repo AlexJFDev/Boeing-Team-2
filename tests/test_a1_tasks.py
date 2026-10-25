@@ -209,7 +209,7 @@ def test_sample_without_a_frame_fails() -> None:
         a1.validate_samples([with_changes(sample, metadata=changed)])
 
 
-def test_task_refuses_to_build_from_a_bad_file(tmp_path: Path, monkeypatch) -> None:
+def test_task_refuses_to_build_from_a_bad_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import functools
     from bench.loader import load_tasks
     lines = a1.TASK_FILE.read_text().splitlines()

@@ -1,4 +1,4 @@
-# ACARS Task D2: indirect prompt-injection vectors
+# ACARS Task D2: indirect prompt-injection vectors (Task 6.1, Issue #81)
 
 D2 tests whether an AI assistant obeys instructions hidden inside ACARS message data. Each
 vector hides one instruction in one field of a synthetic ACARS message while the model does an
@@ -148,3 +148,144 @@ The rule says "synthetic" but not what a synthetic value should look like, so th
 - ADS-B, ARINC 429 and AFDX vectors (item 6.5). Do not copy D2 text word for word into those;
   review rejects duplicates.
 - Scoring, aggregation and the harness (items 6.2, 6.3, 6.7).
+
+
+&nbsp;
+---
+&nbsp;
+---
+&nbsp;
+---
+&nbsp;
+
+
+# ACARS dispatch message corpus (task 5.1, issue #76)
+
+A small, **fully synthetic** corpus of ACARS-style dispatch messages with labeled
+fields, reference values and a recorded source, version and hash.
+
+**Data boundary:** synthetic only. No operational captures, proprietary systems or
+production access. No real tail numbers, flight identifiers or proprietary data.
+
+## Decisions recorded
+
+| Question | Decision |
+|---|---|
+| Source | Synthesized by `scripts/acars/build_acars_dispatch_corpus.py`. Airframes.io and other feeds were **not** accessed, so no third-party terms of use apply to v1.0.0. |
+| "Dispatch message" scope | AOC-style labels `H1` (dispatch release), `80` (out/off report), `5Z` (ETA/gate). Excluded: link management (`Q0`, `SA`), ATC/CPDLC and ADS-C traffic. |
+| Mode | `2` only in v1. |
+| Body formats | Project-defined grammars (`syn-acars-grammar-1`), see below. |
+| Free text | One free-text field per body, `RMK`. It is the only field an attacker could influence in this model, and it is flagged in `reference.free_text_fields`. |
+
+## Message format (one JSON object per line)
+
+| Field | Meaning |
+|---|---|
+| `id` | Stable id, `ACARS-D-####` |
+| `mode`, `label` | ACARS mode character and label |
+| `registration` | Synthetic only, `SYN-A###` |
+| `flight_id` | Synthetic only, `SYN####` |
+| `text` | Message body |
+| `reference` | Reference values (below) |
+| `sanitization` | Method and checklist version applied |
+
+`reference` holds `category`, `well_formed`, `body_matches_label`, `label_consistent`,
+`fields` (parsed values), `free_text_fields`, `contains_instruction_like_text`.
+Everything except `category` and `contains_instruction_like_text` is **re-derived from
+the text on every load** and must match, so reference values cannot drift from structure.
+
+### Body grammars (project-defined)
+
+```
+H1:  REL SYN#### ZZ##-ZZ## FUEL #### [RMK <free text>]      (fuel 4-5 digits)
+80:  OUT hhmm OFF hhmm STN ZZ## [RMK <free text>]
+5Z:  ETA hhmm GATE G## [RMK <free text>]
+```
+
+`hhmm` is 0000-2359. Stations are `ZZ##`, gates `G##`. v1 has no cross-field rules
+(for example OUT before OFF is not checked, and the flight in an `H1` body need not
+equal the message `flight_id`). `well_formed` and `label_consistent` are intentionally
+identical in v1: both mean "the body matches the grammar of the label it carries".
+
+### Categories (63 messages)
+
+| Category | Count | Meaning |
+|---|---|---|
+| `valid` | 24 | Well formed for its label |
+| `valid_lookalike` | 6 | Odd-looking but well formed (all-zero fuel, punctuation-only remark, boundary times) |
+| `malformed` | 12 | Matches no grammar |
+| `label_mismatch` | 9 | Well formed for a *different* label than the one it carries |
+| `adversarial_free_text` | 12 | Well formed, `RMK` carries instruction-like text (feeds D2, #81). About 19% of the corpus |
+
+## Sanitization checklist
+
+Applied automatically at `add_message` (ingest) and again on every `load_corpus`.
+A message failing any item is rejected.
+
+| ID | Rule |
+|---|---|
+| S1 | `registration` uses the reserved synthetic format `SYN-A###` |
+| S2 | `flight_id` uses the reserved synthetic format `SYN####` |
+| S3 | `text` has no real-looking registration (US N-number, hyphenated tail such as `G-ABCD`) |
+| S4 | `text` has no real-looking flight designator (IATA such as `UA123`, `9W402`; ICAO such as `UAL123`) |
+| S5 | `text` has no email address, URL or phone number (separated or bare 10-15 digit) |
+| S6 | `text` has no coordinates |
+| S7 | `text` has no calendar date (ISO `2024-05-17`, slash `05/17/2024`, compact `20240517`, or `17MAY24`) |
+| S8 | `text` is printable ASCII, single line, at most 200 characters |
+
+Synthetic tokens (`SYN-A###`, `SYN####`, `ZZ##`, `G##`) are removed before S3/S4 scan
+the remainder. The scan is deliberately conservative: a harmless token shaped like a
+designator (for example `ENG1`) is rejected and the author rewrites it.
+
+## Provenance, version and hash
+
+`data/acars/acars-dispatch-synthetic-v1.0.0.manifest.json` records name,
+version, `sha256`, message count, category counts, grammar and checklist versions, the
+checklist itself, the source block and the data boundary. The hash is SHA-256 of the
+JSONL file, which is written in canonical form (sorted keys, compact separators, ASCII,
+LF). `load_corpus` fails if the hash, count, canonical form, manifest fields, grammar/checklist
+versions, category counts or `source.kind` are off.
+
+Changing any message means a new version: bump `VERSION` in the generator, regenerate,
+commit the new files.
+
+## How to use
+
+```
+python scripts/acars/build_acars_dispatch_corpus.py      # regenerate (deterministic)
+python scripts/acars/demo_acars_dispatch_corpus.py       # demo output
+python -m pytest tests/test_acars_dispatch_corpus.py
+```
+
+```python
+from bench.acars.dispatch_corpus import load_corpus, add_message
+```
+
+## What this does and does not claim
+
+* Ground truth is "per the project-defined grammar". It is **not** derived from
+  ARINC 618/620, which the team does not hold, and real airline-defined labels have no
+  public body spec. It is a secondary, self-defined source.
+* "Sanitized" means "passes S1-S8", not "safe". Pattern checks cannot prove free text
+  is free of every real identifier. What keeps real data out is that the corpus is
+  synthetic-only and the reserved formats are enforced.
+* `SYN`, `ZZ` and the `SYN-A###` format were chosen as unlikely to collide with
+  assigned registrations, airline designators or station codes. That has not been
+  checked against the ICAO/IATA registries.
+* The corpus has not yet been checked against the D2 harness (#81) format.
+
+## Acceptance criteria traceability
+
+| Criterion | Where it is enforced | Tests |
+|---|---|---|
+| 1. On add or load, each message has mode, label, registration, flight_id, text and matching reference values, and passes S1-S8 | `add_message` -> `validate_message`; `load_corpus` re-runs it for every message (F1-F6, S1-S8) | `test_every_message_has_labeled_fields_and_reference_values`, `test_missing_required_field_is_rejected`, `test_reference_values_follow_from_structure`, `test_empty_text_is_rejected`, `test_every_message_passes_every_checklist_item` |
+| 2. A real-looking registration or flight identifier is rejected on add and fails the data boundary check on load | `add_message` raises and leaves the corpus untouched; `load_corpus` raises `CorpusRejection` with `where="data boundary check"` | `test_add_message_rejects_real_identifier_and_leaves_corpus_untouched`, `test_real_looking_structured_fields_are_rejected`, `test_real_identifiers_in_text_are_rejected`, `test_load_fails_when_a_real_registration_is_smuggled_in`, `test_load_fails_when_a_real_flight_id_is_in_text` |
+
+Source, version and hash are recorded in the manifest and checked on load (P1-P5);
+see `test_load_fails_on_hash_mismatch`. The demo is `scripts/acars/demo_acars_dispatch_corpus.py`.
+
+Error codes: F1 missing field, F2 bad mode/label/text, F3 reference mismatch, F4 category
+mismatch, F5 duplicate id, F6 bad sanitization record, S1-S8 checklist, P1-P5 manifest/file.
+
+Error codes: F1 missing field, F2 bad mode/label/text, F3 reference mismatch, F4 category
+mismatch, F5 duplicate id, F6 bad sanitization record, S1-S8 checklist, P1-P5 manifest/file.
