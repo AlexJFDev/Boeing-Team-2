@@ -264,3 +264,103 @@ def test_out_of_range_fields_are_rejected() -> None:
         CPRFrame(2, 0, 0, 0.0)
     with pytest.raises(ValueError):
         CPRFrame(0, 2**17, 0, 0.0)
+
+
+# --- Local decoding against a reference position (verifier 1.1.0, WBS 2.6) ---
+
+
+def lon_diff(a: float, b: float) -> float:
+    """Longitude difference with the 360-degree wrap removed."""
+    return abs((a - b + 180) % 360 - 180)
+
+
+def pymodes_local(frame: CPRFrame, ref_lat: float, ref_lon: float) -> tuple[float, float]:
+    return position.airborne_position_with_ref(
+        frame.cpr_format, frame.cpr_lat, frame.cpr_lon, ref_lat, ref_lon)
+
+
+@pytest.mark.parametrize("record", POSITIONS, ids=[f["frame_id"] for f in POSITIONS])
+def test_local_decode_matches_pymodes_and_truth(record: dict[str, Any]) -> None:
+    """Every position frame, decoded against a reference about 60 NM away."""
+    truth = record["synthesis"]
+    ref_lat = truth["true_latitude"] - 0.7
+    ref_lon = (truth["true_longitude"] + 0.9 + 180) % 360 - 180
+    frame = frame_of(record)
+    result = cpr.decode_with_reference(frame, ref_lat, ref_lon)
+    assert result.status == "ok" and result.latitude is not None and result.longitude is not None
+    expected = pymodes_local(frame, ref_lat, ref_lon)
+    assert abs(result.latitude - expected[0]) < TOLERANCE_DEG
+    assert lon_diff(result.longitude, expected[1]) < TOLERANCE_DEG
+    assert result.latitude == pytest.approx(truth["true_latitude"], abs=1e-3)
+    assert lon_diff(result.longitude, truth["true_longitude"]) < 1e-3
+
+
+def test_random_local_decodes_match_pymodes_and_truth() -> None:
+    """2,000 seeded random positions, references up to about 1.5 degrees away."""
+    rng = random.Random(20261022)
+    for _ in range(2000):
+        lat, lon = rng.uniform(-85, 85), rng.uniform(-180, 179.999)
+        odd = rng.randint(0, 1)
+        y, x = ENCODER.cpr_encode(lat, lon, odd)
+        frame = CPRFrame(odd, y, x, 0.0)
+        ref_lat = lat + rng.uniform(-1.5, 1.5)
+        ref_lon = (lon + rng.uniform(-1.5, 1.5) + 180) % 360 - 180
+        result = cpr.decode_with_reference(frame, ref_lat, ref_lon)
+        assert result.latitude is not None and result.longitude is not None
+        expected = pymodes_local(frame, ref_lat, ref_lon)
+        assert abs(result.latitude - expected[0]) < TOLERANCE_DEG
+        assert lon_diff(result.longitude, expected[1]) < TOLERANCE_DEG
+        assert result.latitude == pytest.approx(lat, abs=1e-3)
+        assert lon_diff(result.longitude, lon) < 1e-3
+
+
+def test_local_decode_wraps_longitude_across_the_antimeridian() -> None:
+    """trk-06 just west of -180 with the reference east of +180: the answer stays in [-180, 180)."""
+    record = next(f for f in POSITIONS if f["frame_id"] == "adsb-0035")
+    result = cpr.decode_with_reference(frame_of(record), -12.10, 179.40)
+    assert result.longitude is not None and -180 <= result.longitude < 180
+    assert result.longitude == pytest.approx(record["synthesis"]["true_longitude"], abs=1e-3)
+    raw = pymodes_local(frame_of(record), -12.10, 179.40)
+    assert raw[1] > 180  # pyModeS leaves it unwrapped; the verifier does not
+
+
+def test_local_decode_uses_nl_at_the_decoded_latitude() -> None:
+    """trk-10: receiver in band NL 30, aircraft in NL 29. Using the receiver's NL is wrong."""
+    record = next(f for f in POSITIONS if f["frame_id"] == "adsb-0057")
+    assert cpr.nl(59.40) == 30 and cpr.nl(record["synthesis"]["true_latitude"]) == 29
+    result = cpr.decode_with_reference(frame_of(record), 59.40, 16.90)
+    assert result.nl == 29
+    assert result.longitude == pytest.approx(record["synthesis"]["true_longitude"], abs=1e-3)
+
+
+def test_local_decode_with_a_far_reference_is_wrong() -> None:
+    """Why the 180 NM premise matters: 5 degrees away, the answer lands in the wrong zone."""
+    record = POSITIONS[0]
+    truth = record["synthesis"]["true_latitude"]
+    result = cpr.decode_with_reference(frame_of(record), truth + 5.0, record["synthesis"]["true_longitude"])
+    assert result.status == "ok"  # nothing in the message shows the premise failed
+    assert result.latitude is not None and abs(result.latitude - truth) > 1
+
+
+@pytest.mark.parametrize("ref", [(91.0, 0.0), (-90.5, 0.0), (0.0, 180.5), (0.0, -181.0)])
+def test_local_decode_rejects_an_invalid_reference(ref: tuple[float, float]) -> None:
+    with pytest.raises(ValueError, match="reference"):
+        cpr.decode_with_reference(frame_of(POSITIONS[0]), *ref)
+
+
+def test_cli_local_decode() -> None:
+    out = subprocess.run(
+        [sys.executable, "-m", "bench.adsb.cpr", DEMO_EVEN[0], "--ref-lat", "39.5", "--ref-lon", "-72.4"],
+        cwd=REPO_ROOT, capture_output=True, text=True, check=True)
+    printed = json.loads(out.stdout)
+    assert printed["status"] == "ok"
+    assert printed["latitude"] == pytest.approx(38.912, abs=1e-3)
+    assert printed["longitude"] == pytest.approx(-71.402, abs=1e-3)
+
+
+@pytest.mark.parametrize("args", [[DEMO_EVEN[0]], [DEMO_EVEN[0], "--ref-lat", "39.5"],
+                                  [DEMO_EVEN[0], DEMO_ODD[0], "--ref-lat", "39.5", "--ref-lon", "-72"]])
+def test_cli_rejects_a_mixed_or_incomplete_request(args: list[str]) -> None:
+    out = subprocess.run([sys.executable, "-m", "bench.adsb.cpr", *args],
+                         cwd=REPO_ROOT, capture_output=True, text=True)
+    assert out.returncode != 0

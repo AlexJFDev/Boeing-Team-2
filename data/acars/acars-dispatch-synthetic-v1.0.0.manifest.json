@@ -1,0 +1,64 @@
+{
+  "category_counts": {
+    "adversarial_free_text": 12,
+    "label_mismatch": 9,
+    "malformed": 12,
+    "valid": 24,
+    "valid_lookalike": 6
+  },
+  "checklist": [
+    {
+      "id": "S1",
+      "rule": "registration uses the reserved synthetic format SYN-A###"
+    },
+    {
+      "id": "S2",
+      "rule": "flight_id uses the reserved synthetic format SYN####"
+    },
+    {
+      "id": "S3",
+      "rule": "text has no real-looking registration (US N-number, hyphenated tail)"
+    },
+    {
+      "id": "S4",
+      "rule": "text has no real-looking flight designator (IATA or ICAO style)"
+    },
+    {
+      "id": "S5",
+      "rule": "text has no email address, URL or phone number"
+    },
+    {
+      "id": "S6",
+      "rule": "text has no coordinates"
+    },
+    {
+      "id": "S7",
+      "rule": "text has no calendar date (ISO, slash, compact or DDMMMYY form)"
+    },
+    {
+      "id": "S8",
+      "rule": "text is printable ASCII, single line, at most 200 characters"
+    }
+  ],
+  "checklist_version": "1.0",
+  "data_boundary": "Synthetic only. No operational captures, proprietary systems or production access.",
+  "grammar_version": "syn-acars-grammar-1",
+  "labels_in_scope": [
+    "H1",
+    "80",
+    "5Z"
+  ],
+  "message_count": 63,
+  "name": "acars-dispatch-synthetic",
+  "sha256": "cfd4127580fc7e3b5f46388b2c7a21dfb15628de6c0ba046fc93fab25b5e6f8d",
+  "source": {
+    "description": "Messages written by this generator from project-defined body grammars (grammar_version in manifest). Identifiers use reserved synthetic formats.",
+    "external_sources_used": [],
+    "generator": "scripts/acars/build_acars_dispatch_corpus.py",
+    "generator_version": "1.0.0",
+    "ground_truth_basis": "Structure per the project-defined grammar. Secondary: not derived from ARINC 618/620, which this project does not hold.",
+    "kind": "synthetic",
+    "terms_of_use_note": "No external data was accessed. Airframes.io and other public feeds were NOT used for this version, so no third-party terms of use apply."
+  },
+  "version": "1.0.0"
+}

@@ -1,8 +1,13 @@
 """Independent CPR position verifier for airborne ADS-B (WBS 2.2).
 
-Resolves latitude and longitude from an even/odd pair of airborne position
-messages (TC 9-18 and 20-22) by globally unambiguous CPR decoding, following
-DO-260B Appendix A.1.7. It is written from the specification, separately from
+Resolves latitude and longitude of airborne position messages (TC 9-18 and
+20-22) two ways, following DO-260B Appendix A.1.7:
+
+- globally unambiguous decoding from an even/odd pair (``decode_pair``)
+- locally unambiguous decoding of one message against a reference position,
+  such as the receiver's location (``decode_with_reference``, added in 1.1.0)
+
+It is written from the specification, separately from
 both pyModeS and the frame encoder in scripts/adsb/build_frames.py, so that a
 bug in either one shows up as a disagreement instead of agreeing with itself.
 NL(lat) in particular is computed from the closed-form trig expression, where
@@ -16,9 +21,15 @@ reason, never a position:
 - ``same_format``: both frames are even, or both are odd
 - ``zone_mismatch``: the two candidate latitudes fall in different NL zones
 
+Local decoding always returns a position. It is only correct when the reference
+lies within half a zone of the aircraft (about 180 NM for airborne messages,
+DO-260B A.1.7.5); nothing in the message can show that, so the caller must state
+it as a premise.
+
 Command-line demo:
 
     python -m bench.adsb.cpr FRAME_A FRAME_B --t-a 1000.2 --t-b 1000.7
+    python -m bench.adsb.cpr FRAME --ref-lat 38.5 --ref-lon -71.0
 """
 
 from __future__ import annotations
@@ -29,7 +40,7 @@ import math
 from dataclasses import asdict, dataclass
 from typing import Literal
 
-VERIFIER_VERSION = "1.0.0"
+VERIFIER_VERSION = "1.1.0"
 
 # Maximum separation for a usable pair. DO-260B leaves the exact limit to
 # the receiver; 10 s is the common choice (pyModeS's default pair window too),
@@ -188,6 +199,52 @@ def decode_pair(a: CPRFrame, b: CPRFrame, window_s: float = PAIR_WINDOW_S) -> CP
     return CPRResult("ok", latitude=lat, longitude=lon, pair_age_s=age, nl=zones)
 
 
+# ---------------------------------------------------------------------------
+# CPR decoding (DO-260B A.1.7.5, locally unambiguous airborne decoding)
+# ---------------------------------------------------------------------------
+
+
+def _normalize_lon(lon: float) -> float:
+    """Longitude in [-180, 180)."""
+    return (lon + 180.0) % 360.0 - 180.0
+
+
+def decode_with_reference(frame: CPRFrame, ref_lat: float, ref_lon: float) -> CPRResult:
+    """Resolve one frame's position against a reference position.
+
+    The reference (for example the receiver's location) must be within half a
+    zone of the aircraft, about 180 NM; within that range the answer is
+    unambiguous. The message cannot show whether the premise holds, so the
+    result is always status "ok". Raises ValueError for a reference that is not
+    a valid latitude and longitude.
+    """
+    if not -90.0 <= ref_lat <= 90.0:
+        raise ValueError(f"reference latitude {ref_lat} is outside -90..90")
+    if not -180.0 <= ref_lon <= 180.0:
+        raise ValueError(f"reference longitude {ref_lon} is outside -180..180")
+    i = frame.cpr_format
+    y, x = frame.cpr_lat / NB, frame.cpr_lon / NB
+
+    # Latitude zone index: the zone containing the reference, adjusted by at
+    # most one so the decoded latitude lands nearest the reference.
+    d_lat = 360.0 / (4 * NZ - i)
+    j = math.floor(ref_lat / d_lat) + math.floor(0.5 + (ref_lat % d_lat) / d_lat - y)
+    lat = d_lat * (j + y)
+
+    # Longitude zone size depends on the decoded latitude.
+    zones = nl(lat)
+    d_lon = 360.0 / (zones - i) if zones - i > 0 else 360.0
+    m = math.floor(ref_lon / d_lon) + math.floor(0.5 + (ref_lon % d_lon) / d_lon - x)
+    lon = _normalize_lon(d_lon * (m + x))
+
+    return CPRResult("ok", latitude=lat, longitude=lon, nl=zones)
+
+
+def decode_hex_with_reference(frame_hex: str, ref_lat: float, ref_lon: float) -> CPRResult:
+    """Parse one frame and resolve its position against a reference. Raises ValueError."""
+    return decode_with_reference(parse_frame(frame_hex, 0.0), ref_lat, ref_lon)
+
+
 def decode_hex_pair(hex_a: str, t_a: float, hex_b: str, t_b: float,
                     window_s: float = PAIR_WINDOW_S) -> CPRResult:
     """Parse two frames and resolve their position. Raises ValueError for unusable frames."""
@@ -195,16 +252,35 @@ def decode_hex_pair(hex_a: str, t_a: float, hex_b: str, t_b: float,
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Resolve a position from an even/odd ADS-B frame pair.")
+    parser = argparse.ArgumentParser(
+        description="Resolve a position from an even/odd ADS-B frame pair, "
+                    "or from one frame and a reference position.")
     parser.add_argument("frame_a", help="first airborne position frame, 28 hex characters")
-    parser.add_argument("frame_b", help="second airborne position frame, 28 hex characters")
+    parser.add_argument("frame_b", nargs="?", default=None,
+                        help="second airborne position frame (omit for a local decode)")
     parser.add_argument("--t-a", dest="t_a", type=float, default=0.0,
                         help="reception time of the first frame, seconds")
     parser.add_argument("--t-b", dest="t_b", type=float, default=0.0,
                         help="reception time of the second frame, seconds")
+    parser.add_argument("--ref-lat", dest="ref_lat", type=float, default=None,
+                        help="reference latitude for a local decode of one frame")
+    parser.add_argument("--ref-lon", dest="ref_lon", type=float, default=None,
+                        help="reference longitude for a local decode of one frame")
     args = parser.parse_args()
+    local = args.ref_lat is not None or args.ref_lon is not None
+    if local and (args.ref_lat is None or args.ref_lon is None or args.frame_b is not None):
+        parser.error("a local decode takes one frame plus both --ref-lat and --ref-lon")
+    if not local and args.frame_b is None:
+        parser.error("give two frames for a pair decode, or one frame with --ref-lat/--ref-lon")
+    frame_b: str | None = args.frame_b
+    ref_lat: float | None = args.ref_lat
+    ref_lon: float | None = args.ref_lon
     try:
-        result = decode_hex_pair(args.frame_a, args.t_a, args.frame_b, args.t_b)
+        if ref_lat is not None and ref_lon is not None:
+            result = decode_hex_with_reference(args.frame_a, ref_lat, ref_lon)
+        else:
+            assert frame_b is not None  # checked above
+            result = decode_hex_pair(args.frame_a, args.t_a, frame_b, args.t_b)
     except ValueError as exc:
         raise SystemExit(f"rejected: {exc}") from exc
     print(json.dumps({"verifier_version": VERIFIER_VERSION, **asdict(result)}, indent=2))

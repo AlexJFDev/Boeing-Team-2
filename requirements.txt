@@ -8,4 +8,6 @@ jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 scapy==2.8.0
 pytest-asyncio==1.4.0
+-e .
 python-dotenv==1.2.4
+PyYAML==6.0.3

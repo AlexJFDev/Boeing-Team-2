@@ -165,7 +165,7 @@ def test_missing_field_is_rejected_and_named(tmp_path: Path, field: str) -> None
     else:
         expected = "'t-001'"
     with pytest.raises(TaskLoadError) as err:
-        load_tasks(write_tasks(tmp_path, [record]))
+        load_tasks(write_tasks(tmp_path, [record]), verify=False)
     assert expected in str(err.value)
     assert f"missing field '{field}'" in str(err.value)
 
@@ -185,7 +185,7 @@ def test_missing_field_is_rejected_and_named(tmp_path: Path, field: str) -> None
 def test_bad_value_is_rejected_and_named(tmp_path: Path, change: dict[str, Any],
                                          message: str) -> None:
     with pytest.raises(TaskLoadError, match="'t-001'") as err:
-        load_tasks(write_tasks(tmp_path, [with_changes(**change)]))
+        load_tasks(write_tasks(tmp_path, [with_changes(**change)]), verify=False)
     assert message in str(err.value)
 
 
@@ -193,18 +193,18 @@ def test_bad_record_is_identified_among_good_ones(tmp_path: Path) -> None:
     records = [with_changes(id="t-001"), with_changes(id="t-002", family=None),
                with_changes(id="t-003")]
     with pytest.raises(TaskLoadError, match="task 't-002'"):
-        load_tasks(write_tasks(tmp_path, records))
+        load_tasks(write_tasks(tmp_path, records), verify=False)
 
 
 def test_record_without_id_is_identified_by_position(tmp_path: Path) -> None:
     records = [with_changes(id="t-001"), with_changes(id=...)]
     with pytest.raises(TaskLoadError, match="record 2"):
-        load_tasks(write_tasks(tmp_path, records))
+        load_tasks(write_tasks(tmp_path, records), verify=False)
 
 
 def test_duplicate_id_is_rejected(tmp_path: Path) -> None:
     with pytest.raises(TaskLoadError, match="'t-001': duplicate task id"):
-        load_tasks(write_tasks(tmp_path, [GOOD, GOOD]))
+        load_tasks(write_tasks(tmp_path, [GOOD, GOOD]), verify=False)
 
 
 # --- Backlog negative case: preamble that does not exist ---------------------
@@ -214,5 +214,5 @@ def test_duplicate_id_is_rejected(tmp_path: Path) -> None:
 def test_unknown_preamble_fails_and_names_the_task(tmp_path: Path, name: str) -> None:
     record = with_changes(preamble=name)
     with pytest.raises(TaskLoadError, match="'t-001'") as err:
-        load_tasks(write_tasks(tmp_path, [record]))
+        load_tasks(write_tasks(tmp_path, [record]), verify=False)
     assert "preamble" in str(err.value)
