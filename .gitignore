@@ -10,4 +10,6 @@ logs/
 
 # Personal agent instructions (per-developer, not shared)
 CLAUDE.local.md
+*.egg-info/
 .env
+data/afdx/

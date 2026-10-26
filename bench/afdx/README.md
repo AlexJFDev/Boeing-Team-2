@@ -91,3 +91,92 @@ The schema describes configs, not packets. Frames get built from a config that p
 Anomalies here are config-level. The invalid cases are configs that break the spec. Traffic anomalies (frames arriving too fast, sequence gaps, spoofed sources) belong to the pcap trace work, which is a separate task.
 
 No pcap writing here. `generate_frames()` returns packet objects. Writing them to pcap files comes with the trace work.
+
+
+&nbsp;
+---
+&nbsp;
+---
+&nbsp;
+---
+&nbsp;
+
+## AFDX traces with labeled anomalies (task 4.2)
+
+This tool makes fake AFDX network traffic with known problems hidden in it, and writes down exactly where each problem is. Use it to test anything that should spot AFDX problems.
+
+### Quick start
+
+From the repo root:
+
+```
+python -m bench.afdx.generate_afdx_traces
+pytest tests/test_afdx_traces.py
+```
+
+The first command creates the traces in `data/afdx/` (not committed to git; just run it again to rebuild). It gives the same output every time, because each scenario is seeded and the seed is recorded. The current corpus is 176 scenarios and about 37,000 frames.
+
+The second command checks that the labels are correct.
+
+### What you get
+
+```
+data/afdx/
+  pcap/      the traffic: two files per scenario, one per network (A and B)
+  truth/     the answers: one label file (JSON) per scenario
+  manifest.json   a summary and an index of every scenario
+```
+
+There are 176 scenarios. Scenario names tell you what is inside:
+
+| Name | What it is |
+|---|---|
+| `S001_bag_violation_bag2_s0` | One kind of event on two virtual links |
+| `M01_mixed` | Four virtual links, with two anomalies plus normal-but-odd traffic |
+| `MB01_mixed_benign` | Four virtual links, odd-looking traffic but **no anomalies** |
+
+### How the labels work
+
+The pcap files only contain normal packets. If you open one in Wireshark, nothing marks the bad ones. **The labels are in the matching `truth/` file.**
+
+Each `truth/<id>.json` has:
+- `anomalies_requested`: the injected anomaly kinds (empty when none were requested)
+- `violations`: one entry per labeled frame, in time order, with its exact timestamp
+- `frames`: every frame with its labels, benign tags and receiver decisions
+- `anomalies` and `benign_oddities`: the same labels grouped by kind and VL
+- `config`, `preamble`, `seed`
+
+Each entry in the `violations` list says which packet is bad, why, and when:
+
+```json
+{"kind": "bag_violation", "frame_id": "A33", "network": "A", "vl_id": 100,
+ "sn": 31, "t_s": 0.051, "t_us": 51000}
+```
+- `t_s` is seconds from the start of the trace and `t_us` is the same instant as integer microseconds. The pcap clock is `t0_epoch_s + t_s`; `t0_epoch_s` is recorded in the `generator` block of `manifest.json`.
+- A scenario with no anomalies has an empty `violations` list and an empty `anomalies_requested`.
+
+`manifest.json` lists every scenario with its seed, counts and violation counts, and records the generator settings.
+
+### Problems injected
+
+- **BAG violation**: two frames on one link sent closer together than allowed
+- **SkewMax violation**: the A and B copies of a frame arrive too far apart
+- **Sequence-number gap and replay**: numbers jump forward or repeat
+- **Unknown virtual link**: a frame on a link that does not exist
+- **Lmax exceeded**: a frame bigger than the link allows
+- **Spoofed source**: a frame from the wrong sender address
+- **Bus fault**: a few flipped bits, so the checksum is wrong
+- **Injected payload**: contents changed, checksum fixed up to hide it
+
+We also add traffic that looks wrong but is allowed, and none of it is labeled as a problem: a late frame, a skipped sequence number, a wrap from 255 to 1, a steady delay on B inside the limit, and network B going quiet and coming back.
+
+### How we know the labels are right
+
+`afdx_oracle.py` is a separate checker that reads only the pcap files, finds the problems on its own, and must agree with the labels. This includes the timestamp of every BAG and SkewMax violation. The tests also check that scenarios with no anomalies contain none.
+
+### Good to know
+
+- The packet layout comes from public AFDX tutorials, not the paywalled ARINC 664 spec. The source MAC address layout is the least certain part.
+- The checker is our own code, so it is a cross-check but not independent proof. Wireshark or tshark would be an independent one.
+- Sequence-number gaps and replays are checked by whether the receiver rejects the frame, not by a separate detector.
+- Jitter and sequence-number reset (0) are not covered.
