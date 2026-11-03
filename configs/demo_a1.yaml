@@ -1,0 +1,8 @@
+# configs/demo_a1.yaml
+# python -m runner.preflight configs/demo_a1.yaml
+# python -m bench.adsb.a1 
+# inspect view
+task: tasks/a1_adsb_decode.py
+model: ollama/llama3.1
+generate_config: {temperature: 0, seed: 42}
+metadata: {corpus_version: a1-1.0.0}
