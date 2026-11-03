@@ -190,6 +190,25 @@ pytest tests/test_arinc429_decoder.py
 - a BCD digit above 9 with good parity is rejected
 - invalid input is reported, never raised
 
+## B1 word-decode tasks
+
+`b1.py` builds the B1 task set (WBS 3.3, issue #58): 27 synthetic words, each asking
+for the label, SDI, SSM bits and encoded value, or a rejection when parity fails.
+Targets come from the reference decoder and are checked again whenever the task is
+built. The discriminator is the label bit order: every sample stores the label a
+forward read of the octet would give (`naive_label`, for example 321 for 213), so a
+run can count that mistake. The family preamble `data/preambles/arinc429_v1.0.0.txt`
+holds the label map and is rendered from `LABEL_PROFILES`.
+
+```bash
+python scripts/arinc429/build_b1_tasks.py                 # rebuild data/tasks/b1_..._v1.0.0.jsonl
+python -m bench.arinc429.b1 --show b1-a429-0021           # validate and print one sample
+python scripts/arinc429/demo_b1_scoring.py                # the issue #58 demo
+PYTHONPATH=. inspect eval tasks/b1_arinc429_word_decode.py --model mockllm/model
+python -m runner.preflight configs/demo_b1.yaml           # a real model through Ollama
+pytest tests/test_b1_tasks.py
+```
+
 ## Sources
 
 - [Wikipedia, ARINC 429](https://en.wikipedia.org/wiki/ARINC_429): word layout,

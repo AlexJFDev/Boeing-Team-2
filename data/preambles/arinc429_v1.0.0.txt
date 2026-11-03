@@ -1,0 +1,18 @@
+Operational premises for ARINC 429 tasks. They apply to the task below unless the task itself says otherwise.
+
+1. Each word is one 32-bit ARINC 429 word, written as 8 hexadecimal digits after 0x. Bits are numbered 1 to 32 in transmission order, and bit n has the value 2^(n-1) in the hexadecimal number, so bit 1 is the least significant bit.
+2. Bits 1-8 are the label, bits 9-10 the SDI (bit 10 is the more significant), bits 11-29 the data field, bits 30-31 the SSM, and bit 32 the parity bit. Labels are written as three octal digits, following ARINC 429.
+3. Parity is odd: a valid word has an odd number of 1 bits. If the parity check fails, the word is corrupt: reject it and do not report fields from it.
+4. BNR data is two's complement. Bit 29 is the sign bit and bit 28 the most significant data bit. A label's profile gives how many data bits are used below the sign bit; bits below those are zero. The least significant data bit used is worth the resolution.
+5. BCD data is binary-coded decimal, most significant digit first. The first digit takes bits 27-29 and each later digit 4 bits: 23-26, 19-22, 15-18, then 11-14. A profile with fewer than 5 digits leaves the lowest bits zero. The data field holds the magnitude; the sign is not part of the data field.
+6. Decode the data field whatever the SSM says.
+7. Label map for this bus. A label not listed here has no known profile:
+- 203: pressure altitude, ft. BNR, 17 data bits (bits 28 down to 12) below the sign bit, resolution 1 ft.
+- 204: baro-corrected altitude, ft. BNR, 17 data bits (bits 28 down to 12) below the sign bit, resolution 1 ft.
+- 206: computed airspeed, kt. BNR, 14 data bits (bits 28 down to 15) below the sign bit, resolution 0.0625 kt.
+- 213: static air temperature, degC. BNR, 11 data bits (bits 28 down to 18) below the sign bit, resolution 0.25 degC.
+- 324: pitch angle, deg. BNR, 14 data bits (bits 28 down to 15) below the sign bit, resolution 0.010986328125 deg.
+- 012: ground speed, kt. BCD, 4 digits, resolution 1 kt.
+- 013: total air temperature, degC. BCD, 3 digits, resolution 1 degC.
+8. If the information provided is not enough to determine an answer, say that it cannot be determined rather than guessing.
+9. All words are synthetic.

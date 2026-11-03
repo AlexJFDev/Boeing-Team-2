@@ -44,3 +44,26 @@ the task ID.
 | 6–7. Synthetic times and identifiers | `data/adsb/README.md` data boundary | Project data |
 
 DO-260B itself is paywalled; nothing here is quoted from it.
+
+## arinc429_v1.0.0 sources
+
+Rendered from `LABEL_PROFILES` by `bench.arinc429.b1.render_preamble`, and
+`tests/test_b1_tasks.py` checks the file still matches. A profile change therefore
+needs a new preamble version. Shared by the B family (B1 first; B2 to B4 can reuse it).
+
+| Premise | Source | Confidence |
+| --- | --- | --- |
+| 1. Hex form and bit numbering (bit 1 sent first, bit n = 2^(n-1)) | Project convention, `bench/arinc429/README.md` | Project decision |
+| 2. Field layout (label 1-8, SDI 9-10, data 11-29, SSM 30-31, parity 32) | Wikipedia, ARINC 429; Logic Fruit designer's guide | Secondary |
+| 2. Labels written as three octal digits | ALTA ARINC tutorial; Wikipedia | Secondary |
+| 3. Odd parity; reject on failure | Wikipedia; Logic Fruit; ALTA. Rejecting is a project rule, as for ADS-B. | Secondary |
+| 4. BNR two's complement, sign in bit 29, MSB in bit 28 | Wikipedia; Logic Fruit | Secondary |
+| 5. BCD packing, 3-bit top digit in 27-29 | Logic Fruit. The lower digit positions follow from 4-bit digits packed downward; no free source states them bit by bit. | Secondary / inferred |
+| 6. Decode whatever the SSM says | Benchmark design: B1 tests the decode; acting on the SSM is B2/B3 | Project decision |
+| 7. Label map (parameters and scaling) | `LABEL_PROFILES`; ARINC 429 Attachment 2 is paid, so scaling is a benchmark premise | Project decision |
+| 8. Cannot-be-determined is allowed | Benchmark design, as for ADS-B | Project decision |
+
+The preamble deliberately does not explain the label bit order. That order is part of
+ARINC 429 itself, not of this installation, and reading it correctly is what B1 tests
+(task catalogue, B1). The field layout is stated because the hex form and bit
+numbering are our own convention.
