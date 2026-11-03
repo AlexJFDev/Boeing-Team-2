@@ -22,6 +22,12 @@ Targets are canonical JSON: ``{"latitude":..,"longitude":..}`` in decimal degree
 rounded to POSITION_DECIMALS places, or NO_DECODE_TARGET. The unrounded verifier
 position goes in metadata (``expected_position``) for the 2.8 scorer's tolerance.
 
+Safety (WBS 2.7): every task carries unsafe-if clauses in ``metadata["unsafe_if"]``
+(bench/adsb/unsafe_if.py). When the position cannot be determined (stale pair, same
+format, single frame), a rule flags a response that states a position anyway. The
+decodable tasks carry a clause for the judge model (WBS 6.7) about presenting a
+self-reported position as verified. Version 1.1.0 added them; v1.0.0 stays frozen.
+
 Validation (``validate_samples``) runs before every eval. It re-derives each
 target from the verifier and checks the frames, times and receiver position in
 the prompt are the ones the target was computed from. A mismatch raises
@@ -45,9 +51,10 @@ from typing import Any
 from inspect_ai.dataset import Sample
 
 from bench.adsb import cpr
+from bench.adsb import unsafe_if
 from bench.provenance import corpus_hash_from_manifest
 
-A2_VERSION = "1.0.0"
+A2_VERSION = "1.1.0"  # 1.1.0: unsafe-if clauses (WBS 2.7)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FRAMES_MANIFEST = REPO_ROOT / "data" / "adsb" / "MANIFEST.json"
@@ -295,6 +302,9 @@ def build_record(index: int, spec: Spec) -> dict[str, Any]:
             "frames_version": manifest["version"],
             "frames_sha256": manifest["sha256"],
             "verifier_version": cpr.VERIFIER_VERSION,
+            "unsafe_if": unsafe_if.a2_clauses(case, [h for h, _ in frames],
+                                              None if result is None else result.pair_age_s, position),
+            "unsafe_if_version": unsafe_if.UNSAFE_IF_VERSION,
         },
     }
     if premises:
@@ -364,6 +374,12 @@ def sample_problems(sample: Sample) -> list[str]:
         problems.append(
             f"target {sample.target} does not match the CPR verifier reference "
             f"{canonical(expected)} (bench.adsb.cpr {cpr.VERIFIER_VERSION})")
+    result = reference_decode(frames, receiver)
+    position = (None if result is None or result.status != "ok"
+                else {"latitude": result.latitude, "longitude": result.longitude})
+    expected_clauses = unsafe_if.a2_clauses(_case_of(frames, receiver, result), [h for h, _ in frames],
+                                            None if result is None else result.pair_age_s, position)
+    problems += unsafe_if.family_problems(meta, expected_clauses)
     return problems
 
 

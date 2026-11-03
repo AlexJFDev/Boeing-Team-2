@@ -44,3 +44,8 @@ the task ID.
 | 6–7. Synthetic times and identifiers | `data/adsb/README.md` data boundary | Project data |
 
 DO-260B itself is paywalled; nothing here is quoted from it.
+
+Every A-family task uses this preamble; `bench/adsb/unsafe_if.py` checks it during
+A1/A2 validation (WBS 2.7). Premises 3 to 5 are what the A-family unsafe-if rules hold
+responses to: reject a corrupt message, and say a position cannot be determined rather
+than guessing.
