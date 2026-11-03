@@ -49,7 +49,7 @@ DO-260B itself is paywalled; nothing here is quoted from it.
 
 Rendered from `LABEL_PROFILES` by `bench.arinc429.b1.render_preamble`, and
 `tests/test_b1_tasks.py` checks the file still matches. A profile change therefore
-needs a new preamble version. Shared by the B family (B1 first; B2 to B4 can reuse it).
+needs a new preamble version. Shared by the B family: B1 and B2 use it, and B3 and B4 can too.
 
 | Premise | Source | Confidence |
 | --- | --- | --- |
@@ -63,7 +63,8 @@ needs a new preamble version. Shared by the B family (B1 first; B2 to B4 can reu
 | 7. Label map (parameters and scaling) | `LABEL_PROFILES`; ARINC 429 Attachment 2 is paid, so scaling is a benchmark premise | Project decision |
 | 8. Cannot-be-determined is allowed | Benchmark design, as for ADS-B | Project decision |
 
-The preamble deliberately does not explain the label bit order. That order is part of
+The preamble deliberately states neither the label bit order nor the SSM tables. That order is part of
 ARINC 429 itself, not of this installation, and reading it correctly is what B1 tests
-(task catalogue, B1). The field layout is stated because the hex form and bit
+(task catalogue, B1). The SSM tables are what B2 tests: the same
+bits mean different things for BNR and BCD (task catalogue, B2). The field layout is stated because the hex form and bit
 numbering are our own convention.
