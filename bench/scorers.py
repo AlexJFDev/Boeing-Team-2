@@ -12,6 +12,7 @@ from inspect_ai.solver import TaskState
 EXACT_MATCH_VERSION = "1.0.0"
 ADSB_SCORER_VERSION = "2.0.0"
 SCORER_VERSION = ADSB_SCORER_VERSION
+ARINC429_SCORER_VERSION = "1.0.0"
 
 logger = logging.getLogger(__name__)
 
@@ -269,3 +270,120 @@ async def rescore_raw_output(
 
     dummy_target = Target(target_val)
     return await scorer_fn(dummy_state, dummy_target)
+
+# ---------------------------------------------------------------------------
+# ARINC 429 BNR/BCD Capability Scorer (Sprint 3, Task 3.7, Issue #62)
+# ---------------------------------------------------------------------------
+
+def _extract_first_json_dict(text: str) -> dict | None:
+    if not text or not text.strip():
+        return None
+    s = text.strip()
+    decoder = json.JSONDecoder()
+    for idx in range(len(s)):
+        if s[idx] == "{":
+            try:
+                obj, _ = decoder.raw_decode(s[idx:])
+                if isinstance(obj, dict):
+                    return obj
+            except json.JSONDecodeError:
+                continue
+    return None
+
+
+def _arinc_value_matches(predicted, expected, key: str) -> bool:
+    if predicted is None or expected is None:
+        return predicted == expected
+    # Numeric comparison for numeric fields
+    if isinstance(expected, (int, float)) and not isinstance(expected, bool):
+        try:
+            return abs(float(predicted) - float(expected)) <= 1e-4
+        except (ValueError, TypeError):
+            return False
+    return normalize_str(str(predicted)) == normalize_str(str(expected))
+
+
+@scorer(metrics=[mean(), stderr()])
+def arinc429_bnr_bcd_capability_scorer() -> Scorer:
+    """Score decoded ARINC 429 BNR and BCD values against ground truth (Issue #62)."""
+
+    async def score(state: TaskState, target: Target) -> Score:
+        raw_output = state.output.completion if state.output else ""
+        prov = extract_metric_provenance(state)
+
+        # Parse ground-truth target
+        try:
+            target_data = json.loads(target.text) if isinstance(target.text, str) else target.text
+            if not isinstance(target_data, dict):
+                target_data = {"value": target_data}
+        except (TypeError, json.JSONDecodeError):
+            target_data = {"value": target.text}
+
+        parsed_output = _extract_first_json_dict(raw_output)
+
+        if parsed_output is None:
+            logger.warning(
+                "arinc429_scorer 0.0: unparseable output for sample %s", state.sample_id
+            )
+            return Score(
+                value=0.0,
+                answer=raw_output,
+                explanation="Response unparseable into structured JSON fields.",
+                metadata={
+                    "parseable": False,
+                    "raw_response": raw_output,
+                    "per_field_results": {},
+                    "score_type": "capability_only",
+                    "scorer_version": ARINC429_SCORER_VERSION,
+                    **prov,
+                },
+            )
+
+        # Handle rejection / error targets
+        if target_data.get("answer") in ("reject", "invalid_input", "parity_error"):
+            is_matched = normalize_str(str(parsed_output.get("answer"))) == normalize_str(
+                str(target_data["answer"])
+            )
+            return Score(
+                value=1.0 if is_matched else 0.0,
+                answer=json.dumps(parsed_output),
+                explanation=f"Rejection target match: {is_matched}",
+                metadata={
+                    "parseable": True,
+                    "raw_response": raw_output,
+                    "per_field_results": {"answer": is_matched},
+                    "score_type": "capability_only",
+                    "scorer_version": ARINC429_SCORER_VERSION,
+                    **prov,
+                },
+            )
+
+        # Normal field evaluation (e.g., label, encoding, value, ssm, sign)
+        field_results: Dict[str, bool] = {}
+        target_keys = {k.lower(): k for k in target_data.keys()}
+        parsed_keys = {k.lower(): v for k, v in parsed_output.items()}
+
+        for norm_k, orig_k in target_keys.items():
+            expected_val = target_data[orig_k]
+            pred_val = parsed_keys.get(norm_k)
+            field_results[orig_k] = _arinc_value_matches(pred_val, expected_val, norm_k)
+
+        total_fields = len(field_results)
+        matched_fields = sum(1 for passed in field_results.values() if passed)
+        accuracy_score = (matched_fields / total_fields) if total_fields > 0 else 0.0
+
+        return Score(
+            value=accuracy_score,
+            answer=json.dumps(parsed_output),
+            explanation=f"Matched {matched_fields}/{total_fields} fields. Details: {field_results}",
+            metadata={
+                "parseable": True,
+                "raw_response": raw_output,
+                "per_field_results": field_results,
+                "score_type": "capability_only",
+                "scorer_version": ARINC429_SCORER_VERSION,
+                **prov,
+            },
+        )
+
+    return score
