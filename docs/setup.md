@@ -199,6 +199,28 @@ For `vllm/...` models it also checks that the endpoint is reachable and records 
 the endpoint lists for the model in the log. Optional `model_info_fields` names extra
 fields to record.
 
+### Guardrail profiles
+
+Guardrails are an experimental variable: run the same task with and without a profile
+and compare. The optional `guardrail_profile` field selects one:
+
+```yaml
+guardrail_profile:
+  name: hardened_example   # or `none` for the baseline
+  version: 1
+```
+
+A text profile is a system message in `prompts/guardrail_<name>.v<N>.txt`, pinned by
+sha256 in `prompts/manifest.json` like any prompt template, so an unknown profile or
+an edited file is refused before any model call and no log is written. The user
+message is not changed. The name, version and sha256 are recorded in the log under
+`guardrail_profile_*`; a config without the field is recorded as `none`.
+
+The profile reaches the task as the `guardrail_profile` and `guardrail_version` task
+parameters, so the task must accept them and add `profile.pre_solvers()` to its
+solver. `tasks/guardrail_example.py` shows how, and
+`python -m runner.preflight configs/guardrail_example.yaml` runs it.
+
 ## Viewing results
 
 Eval logs are written to `logs/` (git-ignored). Browse them with:
