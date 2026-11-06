@@ -210,7 +210,7 @@ def test_duplicate_id_is_rejected(tmp_path: Path) -> None:
 # --- Backlog negative case: preamble that does not exist ---------------------
 
 
-@pytest.mark.parametrize("name", ["adsb_v9.9.9", "arinc429_v1.0.0", "../adsb_v1.0.0", ""])
+@pytest.mark.parametrize("name", ["adsb_v9.9.9", "arinc429_v9.9.9", "../adsb_v1.0.0", ""])
 def test_unknown_preamble_fails_and_names_the_task(tmp_path: Path, name: str) -> None:
     record = with_changes(preamble=name)
     with pytest.raises(TaskLoadError, match="'t-001'") as err:

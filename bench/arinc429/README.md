@@ -1,9 +1,10 @@
-# ARINC 429 word generator
+# ARINC 429 word generator and reference decoder
 
 `generator.py` makes synthetic ARINC 429 words from a seed, each with a ground-truth
-record of its fields and the value it encodes. It covers WBS 3.1 (issue #56). The
-B-family tasks (3.3 to 3.6) are built from its output, and the 3.2 reference decoder
-will be checked against it.
+record of its fields and the value it encodes. It covers WBS 3.1 (issue #56).
+`decoder.py` is the reference decoder that reads words back (WBS 3.2, issue #57; see
+[Reference decoder](#reference-decoder)). The B-family tasks (3.3 to 3.6) are built
+from the generator's output and graded with the decoder.
 
 The ARINC 429 specification is paid, so nothing here is quoted from it. The
 conventions below come from free secondary sources, listed under [Sources](#sources).
@@ -145,6 +146,68 @@ pytest tests/test_arinc429_generator.py
 
 The two `--out` runs print the same sha256 and write identical files. `--seed` is
 required, so a run can't silently depend on an unrecorded seed.
+
+## Reference decoder
+
+`decoder.py` reads a word (an int, a hex string, or 32 wire bits with `decode_wire`)
+back into the same raw fields and `decoded` record the generator writes, so the two
+compare key for key. It never raises. Each input gets a status:
+
+| Status | When | `decoded` |
+| --- | --- | --- |
+| `decoded` | Parity checks, the label has a profile, the data is a valid encoding | The value |
+| `rejected` | Parity fails, or a BCD digit is not 0–9 | `null`; raw fields still given |
+| `unknown_label` | Parity checks but no profile covers the label | `null`; raw fields given |
+| `invalid_input` | Not a 32-bit word (bad type, not hex, too long, wrong bit string) | `null`, no fields |
+
+It is written separately from the generator so the round trip is a real check and not
+the same code agreeing with itself. The generator packs a two's-complement count and
+shifts it into place. The decoder instead reads each bit by position and adds the
+weight the convention gives it: bit 29 is worth −range, bit 28 range/2, and so on.
+It reads labels one bit at a time and keeps its own copy of the SSM tables. The only
+thing it imports from the generator is `LABEL_PROFILES`, the scaling premises, and a
+test enforces that. A task can pass its own profiles with `decode(word, profiles=...)`.
+
+Like the generator, it doesn't apply bus conformance rules: an NCD word with good
+parity is still decoded, with `ssm_meaning` saying No Computed Data.
+
+```bash
+python -m bench.arinc429.decoder 0x601F40C1 0x601F40C0     # decoded, then rejected
+python scripts/arinc429/demo_round_trip.py --seed 42        # the issue #57 demo
+pytest tests/test_arinc429_decoder.py
+```
+
+`tests/test_arinc429_decoder.py` checks that:
+
+- every generated word with good parity (2,000 words over 5 seeds) decodes to its exact
+  ground truth, and re-encoding the decode gives back the same 32-bit word
+- every value round-trips across each BNR profile's whole range (every count for
+  profiles up to 14 bits, a stride for the 17-bit ones) under all four SSMs, and every
+  BCD value round-trips too
+- every generator fault is rejected, and undoing the recorded flip gives back the
+  original value
+- every single-bit flip of a good word is rejected
+- a BCD digit above 9 with good parity is rejected
+- invalid input is reported, never raised
+
+## B1 word-decode tasks
+
+`b1.py` builds the B1 task set (WBS 3.3, issue #58): 27 synthetic words, each asking
+for the label, SDI, SSM bits and encoded value, or a rejection when parity fails.
+Targets come from the reference decoder and are checked again whenever the task is
+built. The discriminator is the label bit order: every sample stores the label a
+forward read of the octet would give (`naive_label`, for example 321 for 213), so a
+run can count that mistake. The family preamble `data/preambles/arinc429_v1.0.0.txt`
+holds the label map and is rendered from `LABEL_PROFILES`.
+
+```bash
+python scripts/arinc429/build_b1_tasks.py                 # rebuild data/tasks/b1_..._v1.0.0.jsonl
+python -m bench.arinc429.b1 --show b1-a429-0021           # validate and print one sample
+python scripts/arinc429/demo_b1_scoring.py                # the issue #58 demo
+PYTHONPATH=. inspect eval tasks/b1_arinc429_word_decode.py --model mockllm/model
+python -m runner.preflight configs/demo_b1.yaml           # a real model through Ollama
+pytest tests/test_b1_tasks.py
+```
 
 ## Sources
 
