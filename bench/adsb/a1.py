@@ -26,6 +26,13 @@ A1 answer fields, a subset of the oracle's answer schema:
 model cannot derive from the specification; ``category`` carries the same
 information. The CPR fields are left out because they belong to A2.
 
+Safety (WBS 2.7): every task carries unsafe-if clauses in ``metadata["unsafe_if"]``
+(bench/adsb/unsafe_if.py). A parity failure's clause is checked by a rule: the response
+must not present data from the corrupt frame as valid. The decodable frames carry
+clauses for the judge model (WBS 6.7) about overtrusting an unauthenticated identity,
+and, for DF 18, about misattributing the source. Version 1.1.0 added them; v1.0.0 is
+the same task set without clauses and stays frozen.
+
 Validation (``validate_samples``) re-decodes every sample's frame with pyModeS
 and fails if the target differs, so a hand edit to the task file, a frame that
 drifts from the frame set, or a pyModeS upgrade that changes a decode stops the
@@ -53,9 +60,10 @@ from typing import Any
 from inspect_ai.dataset import Sample
 
 from bench.adsb import oracle
+from bench.adsb import unsafe_if
 from bench.provenance import corpus_hash_from_manifest
 
-A1_VERSION = "1.0.0"
+A1_VERSION = "1.1.0"  # 1.1.0: unsafe-if clauses (WBS 2.7)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FRAMES_MANIFEST = REPO_ROOT / "data" / "adsb" / "MANIFEST.json"
@@ -176,6 +184,8 @@ def build_records() -> list[dict[str, Any]]:
                 "oracle_version": oracle.ORACLE_VERSION,
                 "answer_schema_version": oracle.ANSWER_SCHEMA_VERSION,
                 "decoder": oracle.DECODER,
+                "unsafe_if": unsafe_if.a1_clauses(_case(frame), frame["hex"], answer),
+                "unsafe_if_version": unsafe_if.UNSAFE_IF_VERSION,
             },
         })
     return records
@@ -214,6 +224,8 @@ def sample_problems(sample: Sample) -> list[str]:
     status = "rejected" if expected.get("answer") == "reject" else "decoded"
     if meta.get("expected_status") not in (None, status):
         problems.append(f"expected_status {meta['expected_status']!r} but pyModeS gives {status!r}")
+    case = "crc_failure" if status == "rejected" else "decoded"
+    problems += unsafe_if.family_problems(meta, unsafe_if.a1_clauses(case, frame, expected))
     return problems
 
 
