@@ -13,6 +13,12 @@ For ``vllm/...`` models the endpoint is queried first (see ``runner.endpoint``):
 unreachable endpoint aborts before any log is written, and what it lists for the
 model is recorded in the log. The optional ``model_info_fields`` key names extra
 endpoint-specific fields to record.
+
+The optional ``guardrail_profile`` key (``name`` and ``version``) selects a guardrail
+profile (see ``runner.guardrails``). An unknown or edited profile is refused before
+any model call. The profile is passed to the task as the ``guardrail_profile`` and
+``guardrail_version`` task parameters, so the task must accept them; it is recorded in
+the log under ``guardrail_profile_*``. Without the key the log records ``none``.
 """
 
 import argparse
@@ -26,8 +32,9 @@ from inspect_ai import eval as inspect_eval
 from inspect_ai.model import GenerateConfig
 
 from runner.endpoint import EndpointError, vllm_model_metadata
+from runner.guardrails import NONE, GuardrailProfile, GuardrailProfileError, load_guardrail_profile
 
-ALLOWED = ("task", "model", "generate_config", "metadata", "model_info_fields")
+ALLOWED = ("task", "model", "generate_config", "metadata", "model_info_fields", "guardrail_profile")
 REQUIRED = (
     "task",
     "model",
@@ -63,13 +70,44 @@ def load_and_check(path: str | Path) -> dict[str, Any]:
     ]
     if unknown:
         raise PreflightError(f"run config has unknown field(s): {', '.join(unknown)}")
+    guardrail_profile(cfg)  # refuse a bad or edited profile now, before any model call
     return cfg
 
 
+def guardrail_profile(cfg: dict[str, Any]) -> GuardrailProfile:
+    """The profile the config selects; ``none`` when it selects nothing."""
+    selected = cfg.get("guardrail_profile")
+    if selected is None:
+        return load_guardrail_profile(NONE)
+    if not isinstance(selected, dict):
+        raise PreflightError("guardrail_profile must be a mapping with 'name' and 'version'")
+    extra = [k for k in selected if k not in ("name", "version")]
+    if extra:
+        raise PreflightError(f"guardrail_profile has unknown field(s): {', '.join(extra)}")
+    name, version = selected.get("name"), selected.get("version", 1)
+    if not isinstance(name, str) or not name:
+        raise PreflightError("guardrail_profile.name must be a non-empty string")
+    if isinstance(version, bool) or not isinstance(version, int):
+        raise PreflightError("guardrail_profile.version must be an integer")
+    try:
+        return load_guardrail_profile(name, version)
+    except GuardrailProfileError as e:
+        raise PreflightError(str(e)) from e
+
+
 def run_metadata(cfg: dict[str, Any]) -> dict[str, Any]:
-    """Metadata for the EvalLog: the config's own, plus the endpoint's for vllm models."""
+    """Metadata for the EvalLog: the config's own, the guardrail profile's, and the
+    endpoint's for vllm models."""
     endpoint = vllm_model_metadata(cfg["model"], tuple(cfg.get("model_info_fields", ())))
-    return {**cfg["metadata"], **(endpoint or {})}
+    return {**cfg["metadata"], **guardrail_profile(cfg).metadata(), **(endpoint or {})}
+
+
+def task_args(cfg: dict[str, Any]) -> dict[str, Any]:
+    """Task parameters for the selected profile; empty when the config selects none."""
+    if cfg.get("guardrail_profile") is None:
+        return {}
+    profile = guardrail_profile(cfg)
+    return {"guardrail_profile": profile.name, "guardrail_version": profile.version}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -89,6 +127,7 @@ def main(argv: list[str] | None = None) -> int:
         cfg["task"],
         model=cfg["model"],
         metadata=metadata,
+        task_args=task_args(cfg),
         **cfg["generate_config"],
     )
     return 0 if all(log.status == "success" for log in logs) else 1
