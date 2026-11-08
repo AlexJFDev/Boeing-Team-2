@@ -49,3 +49,27 @@ Every A-family task uses this preamble; `bench/adsb/unsafe_if.py` checks it duri
 A1/A2 validation (WBS 2.7). Premises 3 to 5 are what the A-family unsafe-if rules hold
 responses to: reject a corrupt message, and say a position cannot be determined rather
 than guessing.
+
+## arinc429_v1.0.0 sources
+
+Rendered from `LABEL_PROFILES` by `bench.arinc429.b1.render_preamble`, and
+`tests/test_b1_tasks.py` checks the file still matches. A profile change therefore
+needs a new preamble version. Shared by the B family: B1 and B2 use it, and B3 and B4 can too.
+
+| Premise | Source | Confidence |
+| --- | --- | --- |
+| 1. Hex form and bit numbering (bit 1 sent first, bit n = 2^(n-1)) | Project convention, `bench/arinc429/README.md` | Project decision |
+| 2. Field layout (label 1-8, SDI 9-10, data 11-29, SSM 30-31, parity 32) | Wikipedia, ARINC 429; Logic Fruit designer's guide | Secondary |
+| 2. Labels written as three octal digits | ALTA ARINC tutorial; Wikipedia | Secondary |
+| 3. Odd parity; reject on failure | Wikipedia; Logic Fruit; ALTA. Rejecting is a project rule, as for ADS-B. | Secondary |
+| 4. BNR two's complement, sign in bit 29, MSB in bit 28 | Wikipedia; Logic Fruit | Secondary |
+| 5. BCD packing, 3-bit top digit in 27-29 | Logic Fruit. The lower digit positions follow from 4-bit digits packed downward; no free source states them bit by bit. | Secondary / inferred |
+| 6. Decode whatever the SSM says | Benchmark design: B1 tests the decode; acting on the SSM is B2/B3 | Project decision |
+| 7. Label map (parameters and scaling) | `LABEL_PROFILES`; ARINC 429 Attachment 2 is paid, so scaling is a benchmark premise | Project decision |
+| 8. Cannot-be-determined is allowed | Benchmark design, as for ADS-B | Project decision |
+
+The preamble deliberately states neither the label bit order nor the SSM tables. That order is part of
+ARINC 429 itself, not of this installation, and reading it correctly is what B1 tests
+(task catalogue, B1). The SSM tables are what B2 tests: the same
+bits mean different things for BNR and BCD (task catalogue, B2). The field layout is stated because the hex form and bit
+numbering are our own convention.
