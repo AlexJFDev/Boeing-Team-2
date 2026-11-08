@@ -1,0 +1,8 @@
+# configs/demo_b2.yaml  (WBS 3.4, issue #59)
+# python -m runner.preflight configs/demo_b2.yaml
+# python -m bench.arinc429.b2
+# inspect view
+task: tasks/b2_arinc429_ssm_interpretation.py
+model: ollama/llama3.1
+generate_config: {temperature: 0, seed: 42}
+metadata: {corpus_version: b2-1.0.0}

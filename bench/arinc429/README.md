@@ -209,6 +209,27 @@ python -m runner.preflight configs/demo_b1.yaml           # a real model through
 pytest tests/test_b1_tasks.py
 ```
 
+## B2 SSM interpretation tasks
+
+`b2.py` builds the B2 task set (WBS 3.4, issue #59): 14 tasks, each showing two words
+with their labels, one BNR and one BCD, that carry the same SSM bits. For each word
+the model reports the SSM bits and what they mean. The discriminator is that the same
+bits mean different things: 11 is Normal Operation in BNR but Minus in BCD, and 00 is
+Failure Warning in BNR but Plus in BCD. Every sample stores the wrong answers a model
+gives by swapping the tables (`swapped_answer`) or by using one table for both words
+(`bnr_table_answer`, `bcd_table_answer`). The SSM 01 and 10 pairs are controls, where
+both tables agree. Labels are given in the prompt, so B2 does not depend on the B1
+label bit order.
+
+```bash
+python scripts/arinc429/build_b2_tasks.py                 # rebuild data/tasks/b2_..._v1.0.0.jsonl
+python -m bench.arinc429.b2 --show b2-01                  # validate and print one sample
+python scripts/arinc429/demo_b2_scoring.py                # the issue #59 demo
+PYTHONPATH=. inspect eval tasks/b2_arinc429_ssm_interpretation.py --model mockllm/model
+python -m runner.preflight configs/demo_b2.yaml           # a real model through Ollama
+pytest tests/test_b2_tasks.py
+```
+
 ## Sources
 
 - [Wikipedia, ARINC 429](https://en.wikipedia.org/wiki/ARINC_429): word layout,
