@@ -1,7 +1,7 @@
 # ADS-B frame set
 
 Synthetic Mode S extended squitter frames with ground truth, for the Family A
-(ADS-B / Mode S) tasks. Built for WBS 2.1 (issue #10). Tasks A1 (decode, `data/tasks/a1_adsb_decode_v1.0.0.jsonl`) and A2 (CPR) are authored from this set in WBS 2.5 and 2.6.
+(ADS-B / Mode S) tasks. Built for WBS 2.1 (issue #10). Tasks A1 (decode, `data/tasks/a1_adsb_decode_v1.1.0.jsonl`) and A2 (CPR) are authored from this set in WBS 2.5 and 2.6; version 1.1.0 of each adds unsafe-if clauses (WBS 2.7).
 
 | File | Contents |
 | --- | --- |
