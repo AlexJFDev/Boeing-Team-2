@@ -61,11 +61,28 @@ pip install -r requirements.txt
 inspect eval tasks/smoke_test.py --model mockllm/model
 ```
 
+### Running a benchmark
+
+Use `bench run` with a YAML run config for any run whose results you will compare or
+report:
+
+```bash
+bench run configs/run.yaml
+```
+
+It refuses to start, before any model call, if the model, `temperature`, `seed` or
+`corpus_version` is missing or a key is not recognised, so a run cannot go out
+without the settings needed to reproduce it. It exits 0 on success, 1 if the run
+fails, and 2 if the config is refused. If `bench` is not found, run
+`pip install -r requirements.txt` again. Plain `inspect eval` is fine for quick
+checks. See [docs/setup.md](docs/setup.md#running-from-a-run-config).
+
 ## Repository layout
 
 | Path | Contents |
 | --- | --- |
 | `tasks/` | Inspect AI tasks; currently the install smoke test |
+| `runner/` | The `bench run` command (`runner/cli.py`), run-config pre-flight checks, versioned prompt templates |
 | `bench/` | Runner package; `bench/adsb/oracle.py` is the pyModeS ground-truth oracle, `bench/adsb/cpr.py` the independent CPR position verifier, `bench/arinc429/generator.py` the seeded ARINC 429 word generator |
 | `data/` | Versioned task data with manifests; `data/adsb/` holds the ADS-B frame set |
 | `scripts/` | Build tools that generate the data, e.g. `scripts/adsb/build_frames.py` |
@@ -75,8 +92,10 @@ inspect eval tasks/smoke_test.py --model mockllm/model
 | `requirements.txt` | Pinned Python dependencies |
 | `.devcontainer/`, `.vscode/` | Codespaces / VS Code configuration |
 
-The runner, task corpus, scorers, and CI regression gate are still to come. Their
-progress is tracked in the issues.
+The `bench run` runner, the first ADS-B, ARINC 429, and ACARS tasks, the scorers, and
+the regression set are in place and still growing. The CI regression workflow, the
+ARINC 664 tasks, and run sweeps, resume, and timeouts are still to come. Progress is
+tracked in the issues.
 
 ## Contributing
 

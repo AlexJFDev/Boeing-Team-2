@@ -9,6 +9,9 @@ name = "boeing-team-2"
 version = "0.0.0"
 requires-python = ">=3.10"
 
+[project.scripts]
+bench = "runner.cli:main"
+
 [tool.setuptools.packages.find]
 include = ["bench*", "runner*"]
 
