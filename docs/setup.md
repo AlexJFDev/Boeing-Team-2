@@ -205,6 +205,20 @@ For `vllm/...` models it also checks that the endpoint is reachable and records 
 the endpoint lists for the model in the log. Optional `model_info_fields` names extra
 fields to record.
 
+## Multi-turn tool use
+
+Tasks that give the model tools use `bench.agent_loop.bench_solver`, which wraps
+Inspect's `react()` loop: the model calls tools over several turns and ends with
+`submit()`. `turn_limit` on the Task (`max_turns` in task parameters, default 10)
+stops a model that never submits; the sample is then scored on what it has and the
+limit is recorded in the log. The loop settings go in the log through
+`loop_metadata`. Docker must be running.
+
+```bash
+python -m bench.agent_loop                                  # scripted demo, no model
+inspect eval tasks/multi_turn_demo.py --model mockllm/model
+```
+
 ## Viewing results
 
 Eval logs are written to `logs/` (git-ignored). Browse them with:

@@ -1,0 +1,1213 @@
+{
+ "baseline_version": "1.0.0",
+ "cases": {
+  "a1-adsb-0001::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0001::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0001::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0001::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0001::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0002::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0002::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0002::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0002::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0002::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0007::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0007::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0007::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0007::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0007::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0008::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0008::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0008::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0008::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0008::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0013::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0013::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0013::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0013::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0013::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0014::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0014::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0014::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0014::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0014::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0019::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0019::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0019::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0019::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0019::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0020::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0020::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0020::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0020::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0020::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0026::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0026::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0026::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0026::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0026::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0027::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0027::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0027::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0027::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0027::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0032::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0032::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0032::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0032::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0032::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0033::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0033::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0033::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0033::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0033::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0038::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0038::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0038::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0038::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0038::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0039::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0039::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0039::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0039::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0039::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0044::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0044::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0044::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0044::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0044::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0045::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0045::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0045::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0045::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0045::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0050::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0050::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0050::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0050::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0050::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0051::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0051::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0051::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0051::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0051::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0056::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0056::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0056::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0056::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0056::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0057::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0057::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0057::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0057::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0057::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0062::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0062::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0062::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0062::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0062::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0063::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0063::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0063::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0063::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0063::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0064::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.8333333333333334,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0064::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0064::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0064::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0064::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0065::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0065::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0065::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0065::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0065::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0066::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0066::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0066::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0066::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0066::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0067::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0067::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0067::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0067::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0067::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0069::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0069::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0069::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0069::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0069::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0070::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0070::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0070::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0070::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0070::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0071::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0071::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0071::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a1-adsb-0071::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a1-adsb-0071::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-001-global-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-001-global-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-001-global-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-001-global-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-001-global-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-002-global-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-002-global-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-002-global-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-002-global-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-002-global-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-003-global-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-003-global-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-003-global-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-003-global-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-003-global-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-004-global-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-004-global-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-004-global-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-004-global-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-004-global-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-005-global-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-005-global-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-005-global-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-005-global-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-005-global-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-006-global-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-006-global-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-006-global-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-006-global-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-006-global-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-007-global-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-007-global-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-007-global-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-007-global-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-007-global-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-008-global-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-008-global-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-008-global-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-008-global-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-008-global-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-009-global-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-009-global-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-009-global-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-009-global-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-009-global-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-010-global-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-010-global-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-010-global-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-010-global-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-010-global-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-011-local-reference::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-011-local-reference::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-011-local-reference::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-011-local-reference::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-011-local-reference::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-012-local-reference::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-012-local-reference::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-012-local-reference::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-012-local-reference::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-012-local-reference::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-013-local-reference::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-013-local-reference::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-013-local-reference::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-013-local-reference::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-013-local-reference::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-014-local-reference::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-014-local-reference::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-014-local-reference::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-014-local-reference::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-014-local-reference::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-015-local-reference::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-015-local-reference::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-015-local-reference::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-015-local-reference::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-015-local-reference::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-016-local-reference::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-016-local-reference::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-016-local-reference::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-016-local-reference::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-016-local-reference::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-017-local-reference::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-017-local-reference::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-017-local-reference::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-017-local-reference::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-017-local-reference::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-018-local-reference::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-018-local-reference::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-018-local-reference::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-018-local-reference::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-018-local-reference::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-019-local-reference::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-019-local-reference::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-019-local-reference::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-019-local-reference::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-019-local-reference::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-020-local-reference::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.5,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-020-local-reference::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-020-local-reference::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-020-local-reference::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-020-local-reference::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-021-stale-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-021-stale-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-021-stale-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-021-stale-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-021-stale-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-022-stale-pair::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-022-stale-pair::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-022-stale-pair::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-022-stale-pair::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-022-stale-pair::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-023-same-format::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-023-same-format::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-023-same-format::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-023-same-format::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-023-same-format::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-024-same-format::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-024-same-format::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-024-same-format::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-024-same-format::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-024-same-format::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-025-same-format::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-025-same-format::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-025-same-format::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-025-same-format::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-025-same-format::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-026-same-format::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-026-same-format::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-026-same-format::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-026-same-format::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-026-same-format::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-027-single-frame::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-027-single-frame::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-027-single-frame::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-027-single-frame::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-027-single-frame::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-028-single-frame::one_field_wrong": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-028-single-frame::prose_wrapped": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-028-single-frame::reference": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 1.0
+  },
+  "a2-028-single-frame::reformatted": {
+   "adsb_field_capability_scorer": 1.0,
+   "deterministic_exact_match": 0.0
+  },
+  "a2-028-single-frame::unparseable": {
+   "adsb_field_capability_scorer": 0.0,
+   "deterministic_exact_match": 0.0
+  }
+ },
+ "corpus": {
+  "data/tasks/a1_adsb_decode_v1.0.0.jsonl": "a68427a5bfab53adef37f8fbc12708d607d2745343b838ef11eddbe0fac21653",
+  "data/tasks/a2_cpr_position_v1.0.0.jsonl": "29352c4b65efeb486545b870f5e3e3fd91dd97105c576f9a7ab6fd2fa2e56eb4"
+ },
+ "inspect_ai_version": "0.3.273",
+ "reference_config": {
+  "model": "mockllm/model",
+  "seed": 42,
+  "temperature": 0
+ },
+ "regression_version": "1.0.0",
+ "response_kinds": [
+  "reference",
+  "reformatted",
+  "prose_wrapped",
+  "one_field_wrong",
+  "unparseable"
+ ],
+ "scorers": {
+  "adsb_field_capability_scorer": "2.0.0",
+  "deterministic_exact_match": "1.0.0"
+ },
+ "summary": {
+  "adsb_field_capability_scorer": {
+   "one_field_wrong": {
+    "mean": 0.505848,
+    "n": 57
+   },
+   "prose_wrapped": {
+    "mean": 1.0,
+    "n": 57
+   },
+   "reference": {
+    "mean": 1.0,
+    "n": 57
+   },
+   "reformatted": {
+    "mean": 1.0,
+    "n": 57
+   },
+   "unparseable": {
+    "mean": 0.0,
+    "n": 57
+   }
+  },
+  "deterministic_exact_match": {
+   "one_field_wrong": {
+    "mean": 0.0,
+    "n": 57
+   },
+   "prose_wrapped": {
+    "mean": 0.0,
+    "n": 57
+   },
+   "reference": {
+    "mean": 1.0,
+    "n": 57
+   },
+   "reformatted": {
+    "mean": 0.0,
+    "n": 57
+   },
+   "unparseable": {
+    "mean": 0.0,
+    "n": 57
+   }
+  }
+ }
+}
