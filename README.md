@@ -92,8 +92,10 @@ checks. See [docs/setup.md](docs/setup.md#running-from-a-run-config).
 | `requirements.txt` | Pinned Python dependencies |
 | `.devcontainer/`, `.vscode/` | Codespaces / VS Code configuration |
 
-The runner, task corpus, scorers, and CI regression gate are still to come. Their
-progress is tracked in the issues.
+The `bench run` runner, the first ADS-B, ARINC 429, and ACARS tasks, the scorers, and
+the regression set are in place and still growing. The CI regression workflow, the
+ARINC 664 tasks, and run sweeps, resume, and timeouts are still to come. Progress is
+tracked in the issues.
 
 ## Contributing
 
