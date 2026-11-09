@@ -22,6 +22,8 @@ the log under ``guardrail_profile_*``. Without the key the log records ``none``.
 """
 
 import argparse
+import importlib.util
+import inspect
 import sys
 from pathlib import Path
 from typing import Any
@@ -29,6 +31,7 @@ from typing import Any
 import yaml
 from dotenv import load_dotenv
 from inspect_ai import eval as inspect_eval
+from inspect_ai import list_tasks
 from inspect_ai.model import GenerateConfig
 
 from runner.endpoint import EndpointError, vllm_model_metadata
@@ -71,7 +74,47 @@ def load_and_check(path: str | Path) -> dict[str, Any]:
     if unknown:
         raise PreflightError(f"run config has unknown field(s): {', '.join(unknown)}")
     guardrail_profile(cfg)  # refuse a bad or edited profile now, before any model call
+    check_task_accepts_profile(cfg)
     return cfg
+
+
+GUARDRAIL_PARAMS = ("guardrail_profile", "guardrail_version")
+
+
+def check_task_accepts_profile(cfg: dict[str, Any]) -> None:
+    """Refuse a config that names a guardrail profile for a task that cannot apply it.
+
+    Inspect only warns about a task parameter the task does not use, so without this
+    check the run would go ahead with no system message while the log said otherwise.
+    """
+    if cfg.get("guardrail_profile") is None:
+        return
+    spec = str(cfg["task"])
+    path, _, name = spec.partition("@")
+    if not path.endswith(".py") or not Path(path).is_file():
+        raise PreflightError(
+            f"cannot check that task {spec!r} accepts a guardrail profile: "
+            "name a task file (path/to/file.py or path/to/file.py@task_name)"
+        )
+    try:
+        tasks = [t for t in list_tasks(Path(path)) if not name or t.name == name]
+    except Exception as e:
+        raise PreflightError(f"cannot load task {spec!r} to check its parameters: {e}") from e
+    if not tasks:
+        raise PreflightError(f"no task {name or ''!r} found in {path}")
+    module_spec = importlib.util.spec_from_file_location(Path(path).stem, path)
+    assert module_spec is not None and module_spec.loader is not None
+    module = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)
+    for info in tasks:
+        accepted = inspect.signature(getattr(module, info.name)).parameters
+        missing = [p for p in GUARDRAIL_PARAMS if p not in accepted]
+        if missing:
+            raise PreflightError(
+                f"task {info.name!r} in {path} does not accept {', '.join(missing)}, so it "
+                "cannot apply the guardrail profile; add the parameters and "
+                "profile.pre_solvers() to the task (see tasks/guardrail_example.py)"
+            )
 
 
 def guardrail_profile(cfg: dict[str, Any]) -> GuardrailProfile:

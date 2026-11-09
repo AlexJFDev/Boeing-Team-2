@@ -218,8 +218,25 @@ message is not changed. The name, version and sha256 are recorded in the log und
 
 The profile reaches the task as the `guardrail_profile` and `guardrail_version` task
 parameters, so the task must accept them and add `profile.pre_solvers()` to its
-solver. `tasks/guardrail_example.py` shows how, and
+solver. Preflight checks this: if the task file does not accept both parameters, or the
+task is not given as a file path (`path/to/file.py` or `path/to/file.py@task_name`), the
+run is refused with return code 2 and no log is written, rather than running with no
+system message under a mislabelled log. `tasks/guardrail_example.py` shows how, and
 `python -m runner.preflight configs/guardrail_example.yaml` runs it.
+
+## Multi-turn tool use
+
+Tasks that give the model tools use `bench.agent_loop.bench_solver`, which wraps
+Inspect's `react()` loop: the model calls tools over several turns and ends with
+`submit()`. `turn_limit` on the Task (`max_turns` in task parameters, default 10)
+stops a model that never submits; the sample is then scored on what it has and the
+limit is recorded in the log. The loop settings go in the log through
+`loop_metadata`. Docker must be running.
+
+```bash
+python -m bench.agent_loop                                  # scripted demo, no model
+inspect eval tasks/multi_turn_demo.py --model mockllm/model
+```
 
 ## Viewing results
 

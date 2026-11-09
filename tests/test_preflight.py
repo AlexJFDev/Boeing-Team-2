@@ -114,3 +114,29 @@ def test_endpoint_info_is_merged_into_run_metadata(monkeypatch):
         server.shutdown()
     assert meta["corpus_version"] == "synthetic-0.1.0"
     assert meta["endpoint_model"]["info.updated_at"] == 2000
+
+
+def test_guardrail_profile_refused_for_task_that_cannot_apply_it(tmp_path, monkeypatch, capsys):
+    cfg = {**COMPLETE, "guardrail_profile": {"name": "hardened_example", "version": 1}}
+    assert _run(tmp_path, cfg, monkeypatch) == 2
+    err = capsys.readouterr().err
+    assert "smoke_test" in err and "guardrail_profile" in err
+    assert _logs(tmp_path) == []
+
+
+def test_guardrail_profile_refused_when_task_cannot_be_checked(tmp_path, monkeypatch, capsys):
+    cfg = {**COMPLETE, "task": "no_such_file.py", "guardrail_profile": {"name": "none"}}
+    assert _run(tmp_path, cfg, monkeypatch) == 2
+    assert "cannot check" in capsys.readouterr().err
+    assert _logs(tmp_path) == []
+
+
+def test_guardrail_profile_accepted_for_task_that_applies_it(tmp_path, monkeypatch):
+    cfg = {
+        **COMPLETE,
+        "task": "tasks/guardrail_example.py",
+        "guardrail_profile": {"name": "hardened_example", "version": 1},
+    }
+    assert _run(tmp_path, cfg, monkeypatch) == 0
+    [info] = _logs(tmp_path)
+    assert read_eval_log(info).eval.metadata["guardrail_profile_name"] == "hardened_example"

@@ -180,3 +180,53 @@ We also add traffic that looks wrong but is allowed, and none of it is labeled a
 - The checker is our own code, so it is a cross-check but not independent proof. Wireshark or tshark would be an independent one.
 - Sequence-number gaps and replays are checked by whether the receiver rejects the frame, not by a separate detector.
 - Jitter and sequence-number reset (0) are not covered.
+
+
+&nbsp;
+---
+&nbsp;
+---
+&nbsp;
+---
+&nbsp;
+
+
+
+## Scoring BAG and SkewMax findings (task 4.3)
+
+`anomaly_scorer.py` scores a model's AFDX anomaly findings against the BAG and SkewMax violations labeled in the truth files, and reports precision and recall.
+
+```
+python -m bench.afdx.generate_afdx_traces          # only needed for the demo
+python -m bench.afdx.anomaly_scorer --demo         # canned answers against the corpus
+python -m pytest tests/test_afdx_anomaly_scorer.py # unit tests, no corpus needed
+```
+
+### What the model answers
+
+```json
+{"findings": [{"kind": "bag_violation", "vl_id": 203, "sn": 39, "network": "A", "t_s": 2.496}]}
+```
+
+Key order and spacing do not matter. The first JSON object with a `findings` key is used, even inside prose or a code fence. If there is none, or `findings` is not a list, the answer is `unparseable`: every event counts as missed and nothing counts as a false positive.
+
+`parse_status` is `ok` when the whole answer is that object and `ok_extracted` when it was pulled out of surrounding text.
+
+### How it matches
+
+- Ground truth is each truth file's `anomalies` (only `bag_violation` and `skew_violation`) joined to `violations` for the sequence number and time. The corpus is found through `manifest.json`. Benign look-alikes are never ground truth, so flagging one costs precision.
+- The A and B copies of a frame are one *logical frame*. A BAG event is one logical frame; a skew event is six (the delayed B copies).
+- A finding matches when kind, VL and sequence number agree and its time is within the tolerance (default 1 ms, `tolerance_us`), compared in whole microseconds with the bound included. `network` is recorded but not used for matching.
+- Repeated findings, and several findings on one event, count once.
+- An in-scope finding with no timestamp, or with a bad `vl_id`, `sn`, `t_s` or `kind`, is one false positive and never matches.
+- Other kinds (`sn_gap`, `spoofed_source`, ...) are counted as out of scope and do not change the score.
+
+### What it reports
+
+Each sample's score holds TP, FP and FN at two levels: **event** (the headline: an event is found if any of its frames is hit) and **frame** (each logical frame). The Inspect metrics `event_precision`, `event_recall`, `frame_precision` and `frame_recall` add the counts up across samples before dividing, so false alarms on clean and benign traces count. A zero denominator gives NaN in Inspect and "n/a" in the demo. `unparseable_count` counts unparseable answers. Precision and recall are never combined into one number or with other scores.
+
+The score metadata records the scorer version, tolerance, matching rule, unmatched findings and events, malformed findings, parse status, out-of-scope and network-mismatch counts, and the corpus manifest hash. `answer` keeps the raw model output so it can be rescored.
+
+### For task authors
+
+`sample_fields(scenario, truth, manifest_hash)` returns `family`, `target` and `metadata` for a `bench.loader` task record. Add `id`, `preamble`, `source` and `input`, and state the resync rule as a premise.
