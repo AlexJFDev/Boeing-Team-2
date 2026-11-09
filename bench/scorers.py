@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import math
+
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from inspect_ai.scorer import Score, Scorer, Target, accuracy, mean, scorer, stderr
 from inspect_ai.solver import TaskState
@@ -13,6 +15,7 @@ EXACT_MATCH_VERSION = "1.0.0"
 ADSB_SCORER_VERSION = "2.0.0"
 SCORER_VERSION = ADSB_SCORER_VERSION
 ARINC429_SCORER_VERSION = "1.0.0"
+A2_SCORER_VERSION = "2.0.0"
 
 logger = logging.getLogger(__name__)
 
@@ -386,4 +389,81 @@ def arinc429_bnr_bcd_capability_scorer() -> Scorer:
             },
         )
 
+# ---------------------------------------------------------------------------
+# IMPLEMENT THE A2 COORDINATE SCORER REFACTOR (MENTOR REVIEW ITEM)
+# ---------------------------------------------------------------------------
+
+def _parse_coord_pair(val: Any) -> Optional[Tuple[float, float]]:
+    """Parse latitude and longitude from string, list, or dict."""
+    if isinstance(val, (list, tuple)) and len(val) == 2:
+        try:
+            return float(val[0]), float(val[1])
+        except (ValueError, TypeError):
+            return None
+    if isinstance(val, dict):
+        lat = val.get("lat") or val.get("latitude")
+        lon = val.get("lon") or val.get("longitude")
+        if lat is not None and lon is not None:
+            try:
+                return float(lat), float(lon)
+            except (ValueError, TypeError):
+                return None
+    if isinstance(val, str):
+        parts = [p.strip() for p in val.replace(",", " ").split() if p.strip()]
+        if len(parts) == 2:
+            try:
+                return float(parts[0]), float(parts[1])
+            except (ValueError, TypeError):
+                return None
+    return None
+
+@scorer(metrics=[mean(), stderr()])
+def a2_cpr_coordinate_scorer(tolerance_deg: float = 0.001) -> Scorer:
+    """Score A2 coordinates by numeric tolerance rather than rigid text matching."""
+
+    async def score(state: TaskState, target: Target) -> Score:
+        raw_pred = state.output.completion if state.output else ""
+        target_str = str(target.text).strip()
+
+        # Handle explicit reject / no-decode targets
+        if target_str.lower() in ("reject", "no_decode", "stale_pair"):
+            passed = target_str.lower() in raw_pred.lower()
+            return Score(
+                value=1.0 if passed else 0.0,
+                explanation=f"Negative case '{target_str}': {'matched' if passed else 'mismatched'}",
+                metadata={"scorer_version": A2_SCORER_VERSION, "target_type": "rejection"},
+            )
+
+        pred_pair = _parse_coord_pair(raw_pred)
+        target_pair = _parse_coord_pair(target_str)
+
+        if not pred_pair or not target_pair:
+            return Score(
+                value=0.0,
+                explanation=f"Unparseable coordinate format (pred={raw_pred}, target={target_str})",
+                metadata={"scorer_version": A2_SCORER_VERSION, "parseable": False},
+            )
+        
+        lat_err = abs(pred_pair[0] - target_pair[0])
+        lon_err = abs(pred_pair[1] - target_pair[1])
+
+        # Award full score within degree tolerance (default 0.001 deg ~ 60m)
+        if lat_err <= tolerance_deg and lon_err <= tolerance_deg:
+            return Score(
+                value=1.0,
+                explanation=f"Coordinate match within tolerance (dLat={lat_err:.5f}, dLon={lon_err:.5f})",
+                metadata={"scorer_version": A2_SCORER_VERSION, "lat_error": lat_err, "lon_error": lon_err},
+            )
+
+        # Proportional accuracy falloff instead of binary 0 for slight precision variations
+        dist_err = math.sqrt(lat_err**2 + lon_err**2)
+        score_val = max(0.0, 1.0 - (dist_err / (tolerance_deg * 10)))
+
+        return Score(
+            value=round(score_val, 3),
+            explanation=f"Out of tolerance: dist_err={dist_err:.5f} deg",
+            metadata={"scorer_version": A2_SCORER_VERSION, "dist_error": dist_err},
+        )
+    
     return score
+
