@@ -1,0 +1,13 @@
+# Run config with a guardrail profile. Same as configs/run.yaml, plus guardrail_profile.
+# Change name to `none` for the baseline (no system message). The task must accept the
+# guardrail_profile and guardrail_version parameters, as tasks/guardrail_example.py does.
+task: tasks/guardrail_example.py
+model: mockllm/model
+generate_config:
+  temperature: 0
+  seed: 42
+metadata:
+  corpus_version: synthetic-0.1.0
+guardrail_profile:
+  name: hardened_example
+  version: 1
