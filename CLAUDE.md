@@ -20,8 +20,17 @@ source .venv/bin/activate
 pip install -r requirements.txt
 inspect eval tasks/smoke_test.py --model mockllm/model     # no server needed
 inspect eval tasks/smoke_test.py --model ollama/llama3.1   # needs local Ollama
+bench run configs/run.yaml                                 # run from a run config
 pytest
 ```
+
+Use `bench run <config>` for any run whose results will be compared or reported. It
+refuses to start, before any model call, when `model`, `generate_config.temperature`,
+`generate_config.seed` or `metadata.corpus_version` is missing or a key is unknown,
+which is what rule 3 below requires. Do not drive a real run with bare `inspect eval`
+and defaults. Exit codes: 0 success, 1 run failed, 2 config refused (no log written).
+If `bench` is not found, run `pip install -r requirements.txt` again. Copy
+`configs/run.yaml` for a new run; `docs/setup.md` documents the fields.
 
 Eval logs go to `logs/` (git-ignored).
 
