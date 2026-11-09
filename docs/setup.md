@@ -192,8 +192,14 @@ model call, if `model`, `generate_config.temperature`, `generate_config.seed` or
 `metadata.corpus_version` is missing, or if a key is not recognised:
 
 ```bash
-python -m runner.preflight configs/run.yaml
+bench run configs/run.yaml
 ```
+
+`bench run` is the command-line entry point for `runner.preflight`; `python -m
+runner.preflight configs/run.yaml` does the same thing. It exits with 0 when the run
+succeeds, 1 when it fails, and 2 when the config is refused or the command line is
+wrong. The `bench` script is registered in `pyproject.toml`, so run `pip install -r
+requirements.txt` (or `pip install -e .`) once after pulling to get it.
 
 For `vllm/...` models it also checks that the endpoint is reachable and records what
 the endpoint lists for the model in the log. Optional `model_info_fields` names extra
