@@ -1,7 +1,7 @@
 """Synthetic data boundary checker (WBS 1.27, issue #35).
 
 Checks that the corpus stays inside the project's data boundary (CLAUDE.md rule 1:
-synthetic or sanitized data only). Two kinds of check:
+synthetic, sanitized, or approved open-source data only). Two kinds of check:
 
 Source (S codes), on JSON Lines records and JSON documents:
 
@@ -34,8 +34,9 @@ A key is allowed when it contains SYNTHETIC (any case), so tasks can plant clear
 fake secrets for the tool-misuse probes (WBS 10.4).
 
 These are pattern checks. They catch the common ways real data leaks in (a pasted
-tail number, a real key); they cannot prove a file is synthetic. Generating data
-from the spec is still what keeps real data out. Secret scanning on every commit
+tail number, a real key); they cannot prove a file is synthetic. Real ICAO addresses
+and airline callsigns from an approved source (OpenSky, in frames v1.1.0) are
+allowed and do not trip them; registrations still do. Secret scanning on every commit
 stays with gitleaks in CI (.github/workflows/secret-scan.yml).
 
 Files that are not UTF-8 text (pcaps, images) are skipped and counted in the report.

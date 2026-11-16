@@ -1,14 +1,28 @@
-"""Build the synthetic ADS-B frame set (WBS 2.1).
+"""Build the ADS-B frame set (WBS 2.1, issue #10; v1.1.0 resolves data review finding F5).
 
-Encodes Mode S extended squitter frames (DF17/DF18) from the specification,
-then decodes every frame with pyModeS, the reference decoder, and checks that
-the decoder agrees with what was encoded. The decoder output becomes the
-ground truth; the encoder intent is kept beside it for audit.
+Every frame is decoded with pyModeS, the reference decoder, and the decode is
+stored as the ground truth (``expected``).
 
-Everything here is synthetic. Addresses come from the ICAO-administered
-block F00000-F07FFF (ICAO Annex 10 Vol III, Table 9-1, held for temporary
-use and not tied to a registration) and callsigns use the ZZZ placeholder
-prefix, so no frame identifies a real aircraft or flight.
+From v1.1.0 the DF17 frames of the ten tracks are real receptions from the
+OpenSky Network, unchanged: real ICAO addresses, callsigns, positions, altitudes
+and velocities, selected by scripts/adsb/extract_opensky_frames.py into
+data/adsb/opensky_frames_v1.0.0.json. Climbing and descending aircraft therefore
+report the altitudes they were actually at (finding F5). For airborne positions
+the selection also carries the position pyModeS decodes locally against the
+receiving sensor (``reference_position``), which the tests use to check pair decodes.
+
+Two kinds of frame are still constructed, because the five-minute sample has no
+usable equivalent:
+
+- DF18 frames (ADS-R rebroadcasts and a non-transponder device), encoded from the
+  specification with synthetic identities (ICAO block F00000-F07FFF, ZZZ callsigns),
+  for A1's origin discriminator. The sample holds one CRC-valid DF18 message.
+- Corrupt frames: valid frames from this set with chosen bits flipped, so a naive
+  decode gives a plausible wrong answer. They are marked ``label: corrupt`` and
+  carry the source frame and the flipped bits.
+
+v1.0.0, fully synthetic with constant altitude and velocity per track, stays in
+data/adsb, frozen, and is listed under "frozen" in MANIFEST.json.
 
 The output is deterministic: running this script twice produces byte-identical
 files. Do not edit the generated files by hand; change this script, bump
@@ -24,17 +38,18 @@ import argparse
 import hashlib
 import json
 import math
-from dataclasses import dataclass, field
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
 import pyModeS as pms
 
-DATASET_VERSION = "1.0.0"
+DATASET_VERSION = "1.1.0"  # 1.1.0: real OpenSky frames for the tracks (review finding F5)
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUT = REPO_ROOT / "data" / "adsb"
 FRAMES_FILE = f"frames_v{DATASET_VERSION}.jsonl"
+SELECTION_FILE = "opensky_frames_v1.0.0.json"
+SELECTION_SHA256 = "a6b6add54c20246ef30308a3d33832ebbfd61a25fc729ee55aa6351f68358b66"
 
 # Mode S CRC generator polynomial (25 bits), ICAO Annex 10 Vol IV 3.1.2.3.3.
 CRC_GENERATOR = 0x1FFF409
@@ -167,49 +182,21 @@ def flip_bits(frame_hex: str, bits: list[int]) -> str:
 # ---------------------------------------------------------------------------
 
 
-@dataclass
-class Aircraft:
-    track_id: str
-    icao: int
-    callsign: str
-    category: int  # TC 4 emitter category (A0-A7)
-    alt_ft: int
-    start: tuple[float, float]  # (lat, lon) at t0
-    v_east: int  # knots
-    v_north: int  # knots
-    vrate_fpm: int
-    t0: float
-    position_tc: int = 11
-    extra_late_odd_s: float | None = None  # emit an odd frame this many s after the last
-    notes: str = ""
-    positions: list[tuple[float, int, float, float]] = field(default_factory=list)
+TRACK_IDS = tuple(f"trk-{i:02d}" for i in range(1, 11))
 
-
-# Ten synthetic aircraft spread over both hemispheres, a range of latitude-zone
-# counts, and the 180th meridian, so sign handling and zone edges are exercised.
-AIRCRAFT = [
-    Aircraft("trk-01", 0xF00A11, "ZZZ101", 3, 37000, (38.912, -71.402), 310, 250, 0, 1000.0,
-             notes="Mid-latitude cruise over open ocean, western hemisphere."),
-    Aircraft("trk-02", 0xF00A22, "ZZZ202", 5, 41000, (-33.705, 155.218), -420, 120, 0, 1100.0,
-             notes="Southern hemisphere, eastern longitudes."),
-    Aircraft("trk-03", 0xF00A33, "ZZZ303", 1, 4500, (21.317, -158.552), 95, -60, -640, 1200.0,
-             position_tc=12, notes="Light aircraft descending."),
-    Aircraft("trk-04", 0xF00A44, "ZZZ404", 3, 29000, (52.611, 3.877), 380, -150, 1088, 1300.0,
-             extra_late_odd_s=45.0,
-             notes="Climbing. Has an odd frame 45 s after its pair for the A2 stale-pair variant."),
-    Aircraft("trk-05", 0xF00A55, "ZZZ505", 7, 1500, (1.004, -29.812), 60, 40, 128, 1400.0,
-             position_tc=13, notes="Rotorcraft near the equator."),
-    Aircraft("trk-06", 0xF00A66, "ZZZ606", 3, 35000, (-12.448, 179.9988), 400, 0, 0, 1500.0,
-             notes="Crosses the 180th meridian between frames."),
-    Aircraft("trk-07", 0xF00A77, "ZZZ707", 6, 45000, (71.218, -40.304), -300, -300, 0, 1600.0,
-             notes="High latitude, few longitude zones."),
-    Aircraft("trk-08", 0xF00A88, "ZZZ808", 2, 12000, (-45.903, -64.117), 210, 210, -1536, 1700.0,
-             position_tc=11, notes="Southern and western hemispheres."),
-    Aircraft("trk-09", 0xF00A99, "ZZZ909", 4, 24000, (0.0021, 0.0087), 250, 250, 0, 1800.0,
-             notes="Next to the equator and prime meridian."),
-    Aircraft("trk-10", 0xF00AAA, "ZZZ1010", 3, 33000, (59.994, 17.401), 0, 480, 0, 1900.0,
-             notes="Heading due north across a latitude-zone boundary region."),
-]
+# What each track's real aircraft was selected for (see extract_opensky_frames.py).
+TRACK_NOTES = {
+    "trk-01": "Level cruise near FL370.",
+    "trk-02": "Level cruise near FL410, the highest track.",
+    "trk-03": "Descending at low altitude and speed.",
+    "trk-04": "Climbing. Has an odd frame about 40 s after its pair for the A2 stale-pair variant.",
+    "trk-05": "Low and slow level flight, a light aircraft.",
+    "trk-06": "Level cruise near FL350.",
+    "trk-07": "Level cruise, the northernmost track.",
+    "trk-08": "Descending through about 12,000 ft.",
+    "trk-09": "Level flight in the low flight levels.",
+    "trk-10": "Level cruise near FL330.",
+}
 
 # DF18 frames (CF, address, callsign, category).
 DF18_FRAMES = [
@@ -217,18 +204,18 @@ DF18_FRAMES = [
     (6, 0xF00B02, "ZZZ822", 1, "ADS-R rebroadcast of a light aircraft."),
     (0, 0xF00B03, "ZZZV1", 0, "Non-transponder ADS-B device with an ICAO address."),
 ]
-
-POSITION_FRAMES_PER_TRACK = 4  # even, odd, even, odd at 0.5 s spacing
-FRAME_INTERVAL_S = 0.5
-KT_TO_DEG_LAT = 1 / 60 / 3600  # one knot for one second, in degrees of latitude
+DF18_FIRST_TIMESTAMP = 2000.0  # after every real reception (the sample spans 0-300 s)
 
 
-def advance(lat: float, lon: float, v_east: int, v_north: int, dt: float) -> tuple[float, float]:
-    """Dead-reckon a position forward on a flat local approximation."""
-    lat2 = lat + v_north * dt * KT_TO_DEG_LAT
-    lon2 = lon + v_east * dt * KT_TO_DEG_LAT / max(math.cos(math.radians(lat)), 1e-6)
-    lon2 = (lon2 + 180) % 360 - 180
-    return round(lat2, 6), round(lon2, 6)
+def load_selection(path: Path | None = None) -> dict[str, Any]:
+    """The OpenSky message selection, after checking its sha256."""
+    path = path or DEFAULT_OUT / SELECTION_FILE
+    payload = path.read_bytes()
+    actual = hashlib.sha256(payload).hexdigest()
+    if actual != SELECTION_SHA256:
+        raise ValueError(f"{path.name} has sha256 {actual}, expected {SELECTION_SHA256}; "
+                         "the selection is frozen once frames are built from it")
+    return json.loads(payload)
 
 
 def decode(frame_hex: str) -> dict[str, Any]:
@@ -263,61 +250,45 @@ def build() -> list[dict[str, Any]]:
             "expected": dec,
         }
 
-    for ac in AIRCRAFT:
-        # Identification
-        frame = assemble(17, 5, ac.icao, me_identification(4, ac.category, ac.callsign))
-        rec = base(frame, 17, 5, "identification")
-        assert rec["expected"]["callsign"] == ac.callsign
-        add(**rec, track_id=ac.track_id, timestamp=ac.t0,
-            synthesis={"callsign": ac.callsign, "category": ac.category}, notes=ac.notes)
+    selection = load_selection()["tracks"]
+    for track_id in TRACK_IDS:
+        track = selection[track_id]
 
-        # Airborne position, alternating even/odd
-        lat, lon = ac.start
-        t = ac.t0 + 0.2
-        pos_times: list[tuple[float, int, float, float]] = []
-        for i in range(POSITION_FRAMES_PER_TRACK):
-            pos_times.append((round(t, 3), i % 2, lat, lon))
-            t += FRAME_INTERVAL_S
-            lat, lon = advance(lat, lon, ac.v_east, ac.v_north, FRAME_INTERVAL_S)
-        if ac.extra_late_odd_s is not None:
-            last_t = pos_times[-1][0]
-            dt = ac.extra_late_odd_s
-            lat_l, lon_l = advance(pos_times[-1][2], pos_times[-1][3], ac.v_east, ac.v_north, dt)
-            pos_times.append((round(last_t + dt, 3), 1, lat_l, lon_l))
-        ac.positions = pos_times
+        def real(msg: dict[str, Any], message_type: str) -> dict[str, Any]:
+            frame = msg["hex"]
+            ca = int(frame[:2], 16) & 0b111
+            rec = base(frame, 17, ca, message_type)
+            assert rec["expected"]["typecode"] == int(frame[8:10], 16) >> 3
+            return rec
 
-        for ts, odd, plat, plon in pos_times:
-            frame = assemble(17, 5, ac.icao, me_airborne_position(ac.position_tc, ac.alt_ft, odd, plat, plon))
-            rec = base(frame, 17, 5, "airborne_position")
-            exp = rec["expected"]
-            assert exp["altitude"] == ac.alt_ft and exp["cpr_format"] == odd
-            assert (exp["cpr_lat"], exp["cpr_lon"]) == cpr_encode(plat, plon, odd)
-            # Cross-check the true position with pyModeS' locally unambiguous decode.
-            ref = pms.decode(frame, reference=(plat, plon))
-            assert abs(ref["latitude"] - plat) < 1e-3 and abs(((ref["longitude"] - plon + 180) % 360) - 180) < 1e-3
-            add(**rec, track_id=ac.track_id, timestamp=ts,
-                synthesis={"true_latitude": plat, "true_longitude": plon,
-                           "altitude_ft": ac.alt_ft, "cpr_odd": odd},
+        rec = real(track["identification"], "identification")
+        add(**rec, track_id=track_id, timestamp=track["identification"]["t"], source="opensky",
+            synthesis=None, notes=TRACK_NOTES[track_id])
+
+        times = [p["t"] for p in track["positions"]]
+        assert times == sorted(times) and len(set(times)) == len(times), track_id
+        for i, msg in enumerate(track["positions"]):
+            rec = real(msg, "airborne_position")
+            assert rec["expected"]["cpr_format"] == (1 if i == 4 else i % 2), (track_id, i)
+            ref = msg["reference_position"]
+            # The stored reference agrees with pyModeS' local decode around itself.
+            local = pms.decode(msg["hex"], reference=(ref["latitude"], ref["longitude"]))
+            assert abs(local["latitude"] - ref["latitude"]) < 1e-3
+            assert abs((local["longitude"] - ref["longitude"] + 180) % 360 - 180) < 1e-3
+            add(**rec, track_id=track_id, timestamp=msg["t"], source="opensky",
+                synthesis=None, reference_position=ref,
                 notes="Single frame: position needs an even/odd pair or a reference to resolve.")
 
-        # Airborne velocity
-        frame = assemble(17, 5, ac.icao, me_airborne_velocity(ac.v_east, ac.v_north, ac.vrate_fpm))
-        rec = base(frame, 17, 5, "airborne_velocity")
-        exp = rec["expected"]
-        assert exp["groundspeed"] == round(math.hypot(ac.v_east, ac.v_north)) or \
-            abs(exp["groundspeed"] - math.hypot(ac.v_east, ac.v_north)) < 1
-        assert exp["vertical_rate"] == ac.vrate_fpm
-        add(**rec, track_id=ac.track_id, timestamp=round(pos_times[3][0] + 0.2, 3),
-            synthesis={"v_east_kt": ac.v_east, "v_north_kt": ac.v_north,
-                       "vertical_rate_fpm": ac.vrate_fpm},
-            notes="")
+        rec = real(track["velocity"], "airborne_velocity")
+        add(**rec, track_id=track_id, timestamp=track["velocity"]["t"], source="opensky",
+            synthesis=None, notes="")
 
     # DF18 non-transponder / rebroadcast frames
     for i, (cf, icao, callsign, category, note) in enumerate(DF18_FRAMES):
         frame = assemble(18, cf, icao, me_identification(4, category, callsign))
         rec = base(frame, 18, cf, "identification")
         assert rec["expected"]["callsign"] == callsign and rec["expected"]["df"] == 18
-        add(**rec, track_id=None, timestamp=2000.0 + i,
+        add(**rec, track_id=None, timestamp=DF18_FIRST_TIMESTAMP + i, source="spec-synthesized",
             synthesis={"callsign": callsign, "category": category, "cf_meaning": CF_MEANING[cf]},
             notes=note)
 
@@ -358,7 +329,7 @@ def build() -> list[dict[str, Any]]:
             expected_answer="reject",
             expected={"answer": "reject", "reason": "crc_check_failed",
                       "crc_remainder": f"{crc_remainder(bad):06X}"},
-            track_id=src["track_id"], timestamp=src["timestamp"],
+            track_id=src["track_id"], timestamp=src["timestamp"], source=src["source"],
             synthesis=None,
             corruption={"source_frame_id": source_id, "flipped_bits": bits,
                         "naive_decode": naive},
@@ -387,11 +358,39 @@ def write(out_dir: Path) -> dict[str, Any]:
         "counts": dict(sorted(counts.items())),
         "generator": "scripts/adsb/build_frames.py",
         "reference_decoder": f"pyModeS=={version('pyModeS')}",
-        "data_origin": "synthetic; ICAO block F00000-F07FFF; ZZZ placeholder callsigns",
-        "timestamps": "synthetic seconds, not wall-clock time",
+        "data_origin": ("track frames: real OpenSky Network receptions, unchanged (osky-sample, "
+                        "2015-04-21 12:00-12:05 UTC); DF18 frames: synthetic (ICAO block "
+                        "F00000-F07FFF, ZZZ callsigns); corrupt frames: bit flips of frames in this set"),
+        "timestamps": "seconds after 2015-04-21T12:00:00Z for OpenSky frames; DF18 frames from 2000.0",
+        "opensky_selection": {
+            "file": SELECTION_FILE,
+            "sha256": SELECTION_SHA256,
+            "source": "opensky",
+            "generator": "scripts/adsb/extract_opensky_frames.py",
+        },
+        "frozen": frozen_versions(out_dir / "MANIFEST.json"),
     }
     (out_dir / "MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n", newline="\n")
     return manifest
+
+
+def frozen_versions(manifest_path: Path) -> list[dict[str, Any]]:
+    """Earlier frame-set versions, carried forward from the existing manifest.
+
+    When the version is bumped, the entry being replaced moves into "frozen" with its
+    file name and sha256 unchanged, so tasks built on it (A1/A2 v1.0.0 and v1.1.0 on
+    frames v1.0.0) still verify. Frozen entries are never rewritten (CLAUDE.md rule 4).
+    """
+    if not manifest_path.exists():
+        return []
+    previous = json.loads(manifest_path.read_text())
+    frozen = list(previous.get("frozen", []))
+    if previous.get("version") != DATASET_VERSION:
+        frozen.append({k: v for k, v in previous.items() if k != "frozen"})
+    for entry in frozen:
+        if entry["version"] == DATASET_VERSION:
+            raise ValueError(f"frames v{DATASET_VERSION} is already frozen; bump DATASET_VERSION")
+    return sorted(frozen, key=lambda e: [int(x) for x in str(e["version"]).split(".")])
 
 
 def main() -> None:

@@ -6,8 +6,12 @@ corrupted or unlisted file stops the run instead of silently changing results.
 
 Two manifest formats are accepted:
 
-    {"file": "frames_v1.0.0.jsonl", "sha256": "...", ...}        one file (data/adsb, WBS 2.1)
+    {"file": "frames_v1.1.0.jsonl", "sha256": "...", ...}        one file (data/adsb, WBS 2.1)
     {"files": {"adsb_v1.0.0.txt": "...", ...}}                   several files (tasks, preambles)
+
+A one-file manifest is written by its generator and may also list, with their own
+"file" and "sha256", an input file (data/adsb's "opensky_selection") and earlier
+"frozen" versions; those files verify the same way as the current one.
 
 Versioning rule (CLAUDE.md rule 4): a file name carries its version (``_vX.Y.Z``),
 and a manifest entry is never changed once added. A change is a new file with a
@@ -72,7 +76,11 @@ def manifest_entries(manifest_path: Path) -> dict[str, str]:
     if isinstance(manifest.get("files"), dict):
         return {str(k): str(v) for k, v in manifest["files"].items()}
     if "file" in manifest and "sha256" in manifest:
-        return {str(manifest["file"]): str(manifest["sha256"])}
+        entries = {str(manifest["file"]): str(manifest["sha256"])}
+        for extra in [manifest.get("opensky_selection"), *manifest.get("frozen", [])]:
+            if isinstance(extra, dict) and "file" in extra and "sha256" in extra:
+                entries[str(extra["file"])] = str(extra["sha256"])
+        return entries
     raise CorpusError(f"{manifest_path} lists no files")
 
 
