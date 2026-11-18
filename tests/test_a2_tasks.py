@@ -30,6 +30,16 @@ SAMPLES = list(DATASET)
 FRAMES = a2.frames_by_id()
 
 
+def true_position(frame_id: str) -> tuple[float, float]:
+    """Where the aircraft was: for real OpenSky frames, pyModeS' local decode against the
+    receiving sensor (``reference_position``); for synthetic frames, the encoded position."""
+    frame = FRAMES[frame_id]
+    if frame.get("reference_position"):
+        ref = frame["reference_position"]
+        return ref["latitude"], ref["longitude"]
+    return frame["synthesis"]["true_latitude"], frame["synthesis"]["true_longitude"]
+
+
 def meta(sample: Sample) -> dict[str, Any]:
     assert sample.metadata is not None
     return sample.metadata
@@ -179,9 +189,9 @@ def test_position_target_agrees_with_pymodes_and_the_encoded_position(sample: Sa
             newer.cpr_format, newer.cpr_lat, newer.cpr_lon, r["latitude"], r["longitude"])
     assert got["latitude"] == pytest.approx(expected[0], abs=1e-5)
     assert lon_diff(got["longitude"], expected[1]) < 1e-5
-    truth = FRAMES[meta(sample)["frames"][-1]["frame_id"]]["synthesis"]
-    assert got["latitude"] == pytest.approx(truth["true_latitude"], abs=1e-3)
-    assert lon_diff(got["longitude"], truth["true_longitude"]) < 1e-3
+    truth = true_position(meta(sample)["frames"][-1]["frame_id"])
+    assert got["latitude"] == pytest.approx(truth[0], abs=1e-3)
+    assert lon_diff(got["longitude"], truth[1]) < 1e-3
     assert -180 <= got["longitude"] < 180
 
 
@@ -196,21 +206,24 @@ def test_position_is_not_on_a_rounding_boundary(sample: Sample) -> None:
 @pytest.mark.parametrize("sample", by_case("local_reference"), ids=lambda s: str(s.id))
 def test_receiver_is_within_range_but_not_on_top_of_the_aircraft(sample: Sample) -> None:
     r = meta(sample)["receiver"]
-    truth = FRAMES[meta(sample)["frames"][0]["frame_id"]]["synthesis"]
     nm = a2.distance_nm((r["latitude"], r["longitude"]),
-                        (truth["true_latitude"], truth["true_longitude"]))
+                        true_position(meta(sample)["frames"][0]["frame_id"]))
     assert 30 < nm < a2.RECEIVER_RANGE_NM
 
 
 def test_local_set_includes_the_hard_references() -> None:
+    """v1.2.0's real European traffic has no equator or 180th-meridian positions; those
+    cases stay in the frozen v1.0.0/v1.1.0 files. The prime meridian and zone bands remain."""
     notes = " ".join(meta(s)["note"] for s in by_case("local_reference"))
-    for phrase in ("equator", "prime meridian", "180", "longitude-zone band", "stale pair"):
+    for phrase in ("prime meridian", "longitude-zone band", "stale pair"):
         assert phrase in notes, phrase
     for s in by_case("local_reference"):
+        r = meta(s)["receiver"]
+        lat, lon = true_position(meta(s)["frames"][0]["frame_id"])
         if "longitude-zone band" in meta(s)["note"]:
-            r = meta(s)["receiver"]
-            truth = FRAMES[meta(s)["frames"][0]["frame_id"]]["synthesis"]
-            assert cpr.nl(r["latitude"]) != cpr.nl(truth["true_latitude"]), s.id
+            assert cpr.nl(r["latitude"]) != cpr.nl(lat), s.id
+        if "prime meridian" in meta(s)["note"]:
+            assert (r["longitude"] > 0) != (lon > 0), s.id
 
 
 # Criterion 2: stale pairs get the stated no-decode outcome, not a position

@@ -46,9 +46,12 @@ Eval logs go to `logs/` (git-ignored).
 
 ## Rules that must hold
 
-1. **Synthetic or sanitized data only.** Never add real operational captures, real
-   registrations or flight identifiers, proprietary Boeing data, or real secrets, not
-   even as examples.
+1. **Synthetic, sanitized, or approved open-source data only.** Real aircraft
+   addresses and callsigns may appear only as received from an approved open source
+   (`APPROVED_SOURCES` in `bench/boundary.py`, for example the OpenSky Network), with
+   the source and its version recorded in the data's manifest. Never add other real
+   operational captures, real registrations, proprietary Boeing data, or real secrets,
+   not even as examples.
 2. **Never combine safety and capability into one score.** They are reported
    separately. A safety failure leaves the capability score unchanged and produces no
    composite.

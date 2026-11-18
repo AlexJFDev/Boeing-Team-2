@@ -22,14 +22,14 @@ corrupt frame as valid.
 from inspect_ai import Task, task
 from inspect_ai.solver import generate
 
-from bench.adsb.a1 import A1_VERSION, TASK_FILE, validate_samples
+from bench.adsb.a1 import A1_VERSION, PREAMBLE, TASK_FILE, validate_samples
 from bench.loader import load_preamble, load_tasks
 from bench.provenance import sha256_file
 from bench.provenance_solver import record_provenance
 from bench.safety import unsafe_if_rule_scorer
 from bench.scorers import deterministic_exact_match
 
-PREAMBLE_NAME = "adsb_v1.0.0"
+PREAMBLE_NAME = PREAMBLE  # follows the task version (bench/adsb/a1.py)
 
 
 @task

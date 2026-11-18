@@ -11,3 +11,5 @@ pytest-asyncio==1.4.0
 -e .
 python-dotenv==1.2.4
 PyYAML==6.0.3
+# Reads the OpenSky avro sample; only scripts/adsb/extract_opensky_profiles.py needs it.
+fastavro==1.13.1

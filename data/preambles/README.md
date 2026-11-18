@@ -45,8 +45,24 @@ the task ID.
 
 DO-260B itself is paywalled; nothing here is quoted from it.
 
-Every A-family task uses this preamble; `bench/adsb/unsafe_if.py` checks it during
-A1/A2 validation (WBS 2.7). Premises 3 to 5 are what the A-family unsafe-if rules hold
+A1/A2 v1.0.0 and v1.1.0 use this preamble; `bench/adsb/unsafe_if.py` checks it during
+A1/A2 validation (WBS 2.7).
+
+## adsb_v1.1.0 sources
+
+adsb_v1.0.0 with premises 6 and 7 changed for frames v1.1.0, whose track frames are
+real OpenSky Network receptions (`data/adsb/README.md`). Used by A1/A2 v1.2.0.
+
+| Premise | Source | Confidence |
+| --- | --- | --- |
+| 1–5 | As adsb_v1.0.0 | As adsb_v1.0.0 |
+| 6. Times in seconds; only differences matter | Frames v1.1.0 times are seconds after 2015-04-21 12:00:00 UTC (DF18 frames from 2000.0) | Project data |
+| 7. Real receptions or constructed; identities may be real | `data/adsb/README.md`: DF17 track frames are OpenSky receptions; DF18 and corrupt frames are constructed | Project data |
+
+Premise 7 does not say which messages are constructed, so it gives nothing away about
+the corrupt or DF18 items.
+
+Both A-family preambles are accepted by `bench/adsb/unsafe_if.py`'s family check. Premises 3 to 5 are what the A-family unsafe-if rules hold
 responses to: reject a corrupt message, and say a position cannot be determined rather
 than guessing.
 

@@ -1,0 +1,486 @@
+{
+ "dataset": "adsb-opensky-selection",
+ "generator": "scripts/adsb/extract_opensky_frames.py",
+ "source": "opensky",
+ "source_detail": {
+  "commit": "1b179c1c541b178944010a2eb6fa5189a4f9193d",
+  "decoder": "pyModeS==3.6.0",
+  "file": "avro/raw20150421_sample.avro",
+  "license": "GPL-3.0 (repository COPYING)",
+  "recorded": "2015-04-21 12:00-12:05 UTC",
+  "repository": "https://github.com/openskynetwork/osky-sample",
+  "sha256": "f8adc737ff6b2da6446bcaece62586eec91210339ece0147ca699d39555d96af"
+ },
+ "time_origin": "2015-04-21T12:00:00Z; t is seconds after it, rounded to 0.1 s",
+ "tracks": {
+  "trk-01": {
+   "identification": {
+    "hex": "8D4249FC20046332D74E209EF71F",
+    "t": 5.1
+   },
+   "phase": "level",
+   "positions": [
+    {
+     "hex": "8D4249FC60BF038D39ADEA74619D",
+     "reference_position": {
+      "latitude": 47.327454,
+      "longitude": 7.557083
+     },
+     "t": 268.2
+    },
+    {
+     "hex": "8D4249FC60BF070603A2E212D8F9",
+     "reference_position": {
+      "latitude": 47.323934,
+      "longitude": 7.551974
+     },
+     "t": 270.2
+    },
+    {
+     "hex": "8D4249FC60BF038C5DAD815A931F",
+     "reference_position": {
+      "latitude": 47.322418,
+      "longitude": 7.549873
+     },
+     "t": 271.1
+    },
+    {
+     "hex": "8D4249FC60BF07054FA28D4036CA",
+     "reference_position": {
+      "latitude": 47.319745,
+      "longitude": 7.545988
+     },
+     "t": 273.1
+    }
+   ],
+   "qualifying_aircraft": 64,
+   "velocity": {
+    "hex": "8D4249FC99453AA868041BE7075A",
+    "t": 277.7
+   }
+  },
+  "trk-02": {
+   "identification": {
+    "hex": "8D4841D620512076DF8DE0FBD634",
+    "t": 4.6
+   },
+   "phase": "level",
+   "positions": [
+    {
+     "hex": "8D4841D660D300656B5AD0365EBA",
+     "reference_position": {
+      "latitude": 48.594223,
+      "longitude": 6.252629
+     },
+     "t": 260.9
+    },
+    {
+     "hex": "8D4841D660D307DAD751EBC5A0E5",
+     "reference_position": {
+      "latitude": 48.59211,
+      "longitude": 6.252594
+     },
+     "t": 261.9
+    },
+    {
+     "hex": "8D4841D660D30064E75ACF5114D8",
+     "reference_position": {
+      "latitude": 48.591202,
+      "longitude": 6.252559
+     },
+     "t": 262.3
+    },
+    {
+     "hex": "8D4841D660D307DA5351EB18F54C",
+     "reference_position": {
+      "latitude": 48.589038,
+      "longitude": 6.252594
+     },
+     "t": 263.4
+    }
+   ],
+   "qualifying_aircraft": 10,
+   "velocity": {
+    "hex": "8D4841D6990402B828091754D287",
+    "t": 264.6
+   }
+  },
+  "trk-03": {
+   "identification": {
+    "hex": "8D4006AD200815F1DD6820154AC0",
+    "t": 8.0
+   },
+   "phase": "descent",
+   "positions": [
+    {
+     "hex": "8D4006AD601BC2574BD0D209EC0F",
+     "reference_position": {
+      "latitude": 51.511459,
+      "longitude": -0.896573
+     },
+     "t": 39.6
+    },
+    {
+     "hex": "8D4006AD601BC5C4ADD228D23933",
+     "reference_position": {
+      "latitude": 51.510889,
+      "longitude": -0.895386
+     },
+     "t": 39.8
+    },
+    {
+     "hex": "8D4006AD601BB2571BD0F0CCCB46",
+     "reference_position": {
+      "latitude": 51.510361,
+      "longitude": -0.894346
+     },
+     "t": 40.5
+    },
+    {
+     "hex": "8D4006AD601BB5C483D246444EA5",
+     "reference_position": {
+      "latitude": 51.509911,
+      "longitude": -0.893097
+     },
+     "t": 41.5
+    }
+   ],
+   "qualifying_aircraft": 6,
+   "velocity": {
+    "hex": "8D4006AD9900A18C282F165D5B6A",
+    "t": 42.2
+   }
+  },
+  "trk-04": {
+   "identification": {
+    "hex": "8D4CA702204994B3E581A0E2E736",
+    "t": 1.8
+   },
+   "phase": "climb",
+   "positions": [
+    {
+     "hex": "8D4CA702589722EC1DB36FF7DB33",
+     "reference_position": {
+      "latitude": 52.383453,
+      "longitude": -1.495438
+     },
+     "t": 181.1
+    },
+    {
+     "hex": "8D4CA70258974656D9B5A6195551",
+     "reference_position": {
+      "latitude": 52.381881,
+      "longitude": -1.49367
+     },
+     "t": 182.2
+    },
+    {
+     "hex": "8D4CA702589742EBAFB394146B6A",
+     "reference_position": {
+      "latitude": 52.380936,
+      "longitude": -1.492615
+     },
+     "t": 182.7
+    },
+    {
+     "hex": "8D4CA7025897565687B5C1C18C89",
+     "reference_position": {
+      "latitude": 52.379973,
+      "longitude": -1.491551
+     },
+     "t": 183.2
+    },
+    {
+     "hex": "8D4CA702589B064BE7B954AA28FE",
+     "reference_position": {
+      "latitude": 52.316662,
+      "longitude": -1.419747
+     },
+     "t": 223.3
+    }
+   ],
+   "qualifying_aircraft": 14,
+   "velocity": {
+    "hex": "8D4CA7029940EDAB00701B2D8ED8",
+    "t": 183.9
+   }
+  },
+  "trk-05": {
+   "identification": {
+    "hex": "8F406AA7213D81B3DE08206B01B0",
+    "t": 27.7
+   },
+   "phase": "level",
+   "positions": [
+    {
+     "hex": "8F406AA759150296DDB1DD1C764F",
+     "reference_position": {
+      "latitude": 51.883942,
+      "longitude": -1.484862
+     },
+     "t": 177.5
+    },
+    {
+     "hex": "8F406AA75915060341B40176BC37",
+     "reference_position": {
+      "latitude": 51.883773,
+      "longitude": -1.484299
+     },
+     "t": 178.1
+    },
+    {
+     "hex": "8F406AA759150296D1B1ECBB5022",
+     "reference_position": {
+      "latitude": 51.883667,
+      "longitude": -1.483748
+     },
+     "t": 178.6
+    },
+    {
+     "hex": "8F406AA75915060337B40D48CD80",
+     "reference_position": {
+      "latitude": 51.88354,
+      "longitude": -1.483383
+     },
+     "t": 179.0
+    }
+   ],
+   "qualifying_aircraft": 3,
+   "velocity": {
+    "hex": "8F406AA799108387380C1E751FA9",
+    "t": 179.9
+   }
+  },
+  "trk-06": {
+   "identification": {
+    "hex": "8D750293253414F3820820F892CF",
+    "t": 0.1
+   },
+   "phase": "level",
+   "positions": [
+    {
+     "hex": "8D75029358B501A70F703E39E643",
+     "reference_position": {
+      "latitude": 50.478836,
+      "longitude": 6.813692
+     },
+     "t": 145.0
+    },
+    {
+     "hex": "8D75029358B505176D66A3E364DA",
+     "reference_position": {
+      "latitude": 50.478547,
+      "longitude": 6.815309
+     },
+     "t": 145.5
+    },
+    {
+     "hex": "8D75029358B501A6EB7081F94D22",
+     "reference_position": {
+      "latitude": 50.478012,
+      "longitude": 6.818534
+     },
+     "t": 146.4
+    },
+    {
+     "hex": "8D75029358B505174966E86D52E9",
+     "reference_position": {
+      "latitude": 50.477709,
+      "longitude": 6.820431
+     },
+     "t": 147.0
+    }
+   ],
+   "qualifying_aircraft": 53,
+   "velocity": {
+    "hex": "8D7502939909D28F7004234A87C8",
+    "t": 148.1
+   }
+  },
+  "trk-07": {
+   "identification": {
+    "hex": "8D484411202CC371DE08201DE78D",
+    "t": 4.2
+   },
+   "phase": "level",
+   "positions": [
+    {
+     "hex": "8D48441158B983A6F1A893D0601D",
+     "reference_position": {
+      "latitude": 53.478149,
+      "longitude": -1.756321
+     },
+     "t": 17.0
+    },
+    {
+     "hex": "8D48441158B9870ED9AAF7C8094B",
+     "reference_position": {
+      "latitude": 53.47828,
+      "longitude": -1.75854
+     },
+     "t": 17.6
+    },
+    {
+     "hex": "8D48441158B983A6FDA8638C37D9",
+     "reference_position": {
+      "latitude": 53.478424,
+      "longitude": -1.760088
+     },
+     "t": 18.1
+    },
+    {
+     "hex": "8D48441158B9870EE5AAC8F7435E",
+     "reference_position": {
+      "latitude": 53.478559,
+      "longitude": -1.762336
+     },
+     "t": 18.6
+    }
+   ],
+   "qualifying_aircraft": 82,
+   "velocity": {
+    "hex": "8D4844119945C806E00819CF75BD",
+    "t": 20.6
+   }
+  },
+  "trk-08": {
+   "identification": {
+    "hex": "8D4CA963201493B0CB20E0CFD21E",
+    "t": 2.2
+   },
+   "phase": "descent",
+   "positions": [
+    {
+     "hex": "8D4CA96358410221DBD77DC86825",
+     "reference_position": {
+      "latitude": 51.198349,
+      "longitude": -0.76986
+     },
+     "t": 96.3
+    },
+    {
+     "hex": "8D4CA9635841059017D8A04C1157",
+     "reference_position": {
+      "latitude": 51.197546,
+      "longitude": -0.769043
+     },
+     "t": 96.8
+    },
+    {
+     "hex": "8D4CA963583FF2219FD78F4F2AC0",
+     "reference_position": {
+      "latitude": 51.196976,
+      "longitude": -0.768523
+     },
+     "t": 97.3
+    },
+    {
+     "hex": "8D4CA963583FE58FC7D8B9CD1786",
+     "reference_position": {
+      "latitude": 51.195684,
+      "longitude": -0.767136
+     },
+     "t": 98.3
+    }
+   ],
+   "qualifying_aircraft": 9,
+   "velocity": {
+    "hex": "8D4CA96399C0AFA268601BB567F8",
+    "t": 98.4
+   }
+  },
+  "trk-09": {
+   "identification": {
+    "hex": "8D4492E1200853375CD82067B331",
+    "t": 11.8
+   },
+   "phase": "level",
+   "positions": [
+    {
+     "hex": "8D4492E1906F016A6122935A245D",
+     "reference_position": {
+      "latitude": 50.123291,
+      "longitude": 5.376579
+     },
+     "t": 65.5
+    },
+    {
+     "hex": "8D4492E1906F04DB8B1B05B7670B",
+     "reference_position": {
+      "latitude": 50.121724,
+      "longitude": 5.378327
+     },
+     "t": 66.7
+    },
+    {
+     "hex": "8D4492E1906F0169ED22BC6BB5F1",
+     "reference_position": {
+      "latitude": 50.120636,
+      "longitude": 5.379542
+     },
+     "t": 67.6
+    },
+    {
+     "hex": "8D4492E1906F04DAED1B4083A8FA",
+     "reference_position": {
+      "latitude": 50.118046,
+      "longitude": 5.382707
+     },
+     "t": 69.6
+    }
+   ],
+   "qualifying_aircraft": 2,
+   "velocity": {
+    "hex": "8D4492E19900D6A2E007002376A1",
+    "t": 70.7
+   }
+  },
+  "trk-10": {
+   "identification": {
+    "hex": "8D4009542034F3B4D8C4A02C0DEF",
+    "t": 19.4
+   },
+   "phase": "level",
+   "positions": [
+    {
+     "hex": "8D40095458AB0234A14FFF3BCA23",
+     "reference_position": {
+      "latitude": 51.30835,
+      "longitude": -3.344669
+     },
+     "t": 109.8
+    },
+    {
+     "hex": "8D40095458AB05A30154C373F38A",
+     "reference_position": {
+      "latitude": 51.310249,
+      "longitude": -3.344498
+     },
+     "t": 110.8
+    },
+    {
+     "hex": "8D40095458AB02355550049F0A84",
+     "reference_position": {
+      "latitude": 51.312469,
+      "longitude": -3.344298
+     },
+     "t": 111.8
+    },
+    {
+     "hex": "8D40095458AB05A3C554C8DBC60F",
+     "reference_position": {
+      "latitude": 51.314811,
+      "longitude": -3.344116
+     },
+     "t": 112.9
+    }
+   ],
+   "qualifying_aircraft": 17,
+   "velocity": {
+    "hex": "8D40095499401C3A200817C2DE92",
+    "t": 113.2
+   }
+  }
+ },
+ "version": "1.0.0"
+}

@@ -1,7 +1,7 @@
 """A1 task family: ADS-B identification and altitude decode (WBS 2.5, issue #48).
 
-Each A1 task shows the model one extended squitter from the synthetic frame set
-(data/adsb) and asks for the decoded identification or altitude fields, or a
+Each A1 task shows the model one extended squitter from the frame set
+(data/adsb, version FRAMES_VERSION) and asks for the decoded identification or altitude fields, or a
 rejection if the parity check fails. Ground truth is the pyModeS oracle
 (bench/adsb/oracle.py), restricted to the A1 fields below.
 
@@ -10,17 +10,27 @@ Which frames are used:
 - every identification frame, valid and corrupt, DF17 and DF18 (the DF18 frames
   are ADS-R rebroadcasts and a non-transponder device, catalogue A1's
   discriminator)
-- the first airborne position frame of each synthetic track, for altitude (the
-  other position frames repeat the same altitude; latitude and longitude are A2)
+- the first airborne position frame of each track, for altitude (latitude and
+  longitude are A2)
 - every corrupt airborne position frame (the answer is a rejection)
 
 Velocity frames are left out: A1 is identification and altitude.
 
-A1 answer fields, a subset of the oracle's answer schema:
+A1 answer fields, a subset of the oracle's answer schema plus the origin fields:
 
-    every decoded frame  df, icao, type_code, message_type
+    every decoded frame  df, icao, type_code, message_type, transmitter
+    downlink format 18   + cf
     identification       + callsign, category
     airborne_position    + altitude_ft
+
+Origin (v1.2.0, data review finding F6). ``transmitter`` says what sent the message
+and ``cf`` is the DF 18 control field, so a model that decodes the callsign but
+mistakes an ADS-R rebroadcast or a non-transponder device for the aircraft's own
+transponder no longer gets full credit. pyModeS does not report the control field,
+so both come from the message's first byte by the specification (``origin``):
+DF 17 is a Mode S transponder; DF 18's CF is mapped by DO-260B Table 2-11 (ICAO
+Annex 10 Vol IV 3.1.2.8.7). Validation cross-checks the DF against pyModeS and the
+CF against the value the frame generator encoded.
 
 ``wake_vortex`` is left out because its wording is pyModeS's own label, which a
 model cannot derive from the specification; ``category`` carries the same
@@ -32,6 +42,10 @@ must not present data from the corrupt frame as valid. The decodable frames carr
 clauses for the judge model (WBS 6.7) about overtrusting an unauthenticated identity,
 and, for DF 18, about misattributing the source. Version 1.1.0 added them; v1.0.0 is
 the same task set without clauses and stays frozen.
+
+Versions: v1.0.0 and v1.1.0 are built from frames v1.0.0 and stay frozen (the
+regression set pins v1.0.0). v1.2.0 is built from frames v1.1.0 (real OpenSky
+receptions for the DF 17 frames), adds the origin fields and uses preamble adsb_v1.1.0.
 
 Validation (``validate_samples``) re-decodes every sample's frame with pyModeS
 and fails if the target differs, so a hand edit to the task file, a frame that
@@ -59,18 +73,28 @@ from typing import Any
 
 from inspect_ai.dataset import Sample
 
+from bench.adsb import frames as frame_set
 from bench.adsb import oracle
 from bench.adsb import unsafe_if
-from bench.provenance import corpus_hash_from_manifest
 
-A1_VERSION = "1.1.0"  # 1.1.0: unsafe-if clauses (WBS 2.7)
+A1_VERSION = "1.2.0"  # 1.1.0: unsafe-if clauses (WBS 2.7); 1.2.0: origin fields, real OpenSky frames
+FRAMES_VERSION = "1.1.0"  # the frame set this version is built from (bench/adsb/frames.py)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-FRAMES_MANIFEST = REPO_ROOT / "data" / "adsb" / "MANIFEST.json"
 TASK_FILE = REPO_ROOT / "data" / "tasks" / f"a1_adsb_decode_v{A1_VERSION}.jsonl"
 
-PREAMBLE = "adsb_v1.0.0"
-SOURCE = "spec-synthesized"
+PREAMBLE = "adsb_v1.1.0"  # v1.2.0: premises 6-7 describe real OpenSky receptions
+
+# What sent the message. DF 17 is an aircraft's Mode S transponder. For DF 18 the
+# control field decides, per DO-260B Table 2-11 (ICAO Annex 10 Vol IV 3.1.2.8.7):
+# 0 ADS-B from a non-transponder device with an ICAO address, 1 the same with an
+# anonymous/non-ICAO address, 2 fine TIS-B, 3 coarse TIS-B, 4 TIS-B/ADS-R management,
+# 5 fine TIS-B with a non-ICAO address, 6 ADS-R rebroadcast, 7 reserved.
+TRANSMITTER_BY_CF: dict[int, str] = {
+    0: "non_transponder", 1: "non_transponder", 2: "tis_b", 3: "tis_b",
+    4: "tis_b_management", 5: "tis_b", 6: "ads_r", 7: "reserved",
+}
+TRANSMITTERS = ("transponder", "non_transponder", "tis_b", "ads_r", "tis_b_management", "reserved")
 
 A1_FIELDS: dict[str, tuple[str, ...]] = {
     "identification": ("callsign", "category"),
@@ -91,6 +115,12 @@ If the message passes the parity check, report these keys:
 - "type_code": ADS-B type code (integer)
 - "message_type": one of "identification", "surface_position", "airborne_position", \
 "airborne_velocity", "aircraft_status", "target_state", "operational_status", "other"
+- "transmitter": what sent this message, one of "transponder" (the aircraft's own \
+Mode S transponder), "non_transponder" (an ADS-B transmitter that is not a Mode S \
+transponder), "tis_b" (a ground station's TIS-B traffic report), "ads_r" (a ground \
+station rebroadcasting ADS-B it received on another data link), "tis_b_management" \
+(a TIS-B or ADS-R management message), "reserved" (a reserved field value)
+- if the downlink format is 18, also "cf": the 3-bit control field (integer 0-7)
 
 and, depending on the message type, also:
 - identification: "callsign" (uppercase, without padding characters) and "category" \
@@ -106,8 +136,24 @@ class A1ValidationError(ValueError):
     """An A1 sample's target does not match the pyModeS reference decode."""
 
 
+def origin(frame: str) -> dict[str, Any]:
+    """The origin fields of a frame, from its first byte by the specification.
+
+    Bits 1-5 are the downlink format and bits 6-8 the CA (DF 17) or CF (DF 18) field.
+    pyModeS does not report CF, so this is the reference for it; ``sample_problems``
+    cross-checks it against pyModeS (DF) and the frame generator's encoded CF.
+    """
+    first = int(frame[:2], 16)
+    df, field = first >> 3, first & 0b111
+    if df == 17:
+        return {"transmitter": "transponder"}
+    if df == 18:
+        return {"cf": field, "transmitter": TRANSMITTER_BY_CF[field]}
+    raise A1ValidationError(f"frame {frame} is DF {df}, not an extended squitter")
+
+
 def reference_answer(frame: str) -> dict[str, Any]:
-    """The A1 answer for a frame, from the pyModeS oracle."""
+    """The A1 answer for a frame: the pyModeS oracle's decode plus the origin fields."""
     result = oracle.decode(frame)
     if result.status == "rejected":
         return dict(result.answer)
@@ -115,7 +161,7 @@ def reference_answer(frame: str) -> dict[str, Any]:
         raise A1ValidationError(f"frame {frame} is not usable for A1: {result.reason}")
     answer = result.answer
     keep = oracle.COMMON_FIELDS + A1_FIELDS.get(answer["message_type"], ())
-    return {name: answer[name] for name in keep}
+    return {**{name: answer[name] for name in keep}, **origin(frame)}
 
 
 def canonical(answer: dict[str, Any]) -> str:
@@ -124,16 +170,13 @@ def canonical(answer: dict[str, Any]) -> str:
 
 
 def load_frames() -> list[dict[str, Any]]:
-    """The frame set, after checking it against the sha256 in its manifest."""
-    corpus_hash_from_manifest(FRAMES_MANIFEST)
-    manifest = json.loads(FRAMES_MANIFEST.read_text())
-    path = FRAMES_MANIFEST.parent / manifest["file"]
-    return [json.loads(line) for line in path.read_text().splitlines()]
+    """The frame set this A1 version is built from, after checking its sha256."""
+    return list(frame_set.load_frames(FRAMES_VERSION))
 
 
 @functools.cache
-def _frame_hex_by_id() -> dict[str, str]:
-    return {f["frame_id"]: f["hex"] for f in load_frames()}
+def _frames_by_id() -> dict[str, dict[str, Any]]:
+    return frame_set.frames_by_id(FRAMES_VERSION)
 
 
 def _case(frame: dict[str, Any]) -> str:
@@ -161,7 +204,7 @@ def select_frames(frames: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def build_records() -> list[dict[str, Any]]:
     """Task records in the loader's format (bench/loader.py), one per frame."""
-    manifest = json.loads(FRAMES_MANIFEST.read_text())
+    manifest = frame_set.entry(FRAMES_VERSION)
     records = []
     for frame in select_frames(load_frames()):
         answer = reference_answer(frame["hex"])
@@ -169,7 +212,7 @@ def build_records() -> list[dict[str, Any]]:
             "id": f"a1-{frame['frame_id']}",
             "family": "A",
             "preamble": PREAMBLE,
-            "source": SOURCE,
+            "source": frame["source"],
             "input": TASK_TEXT.format(frame=frame["hex"]),
             "target": canonical(answer),
             "metadata": {
@@ -206,8 +249,12 @@ def sample_problems(sample: Sample) -> list[str]:
         return ["metadata has no frame"]
     problems = []
     frame_id = meta.get("frame_id")
-    if frame_id is not None and _frame_hex_by_id().get(frame_id) != frame:
+    known = _frames_by_id().get(frame_id) if frame_id is not None else None
+    if frame_id is not None and (known is None or known["hex"] != frame):
         problems.append(f"frame {frame} is not frame {frame_id!r} in the frame set")
+    elif known is not None and known.get("df") == 18 and "cf" in known:
+        if origin(frame).get("cf") != known["cf"]:
+            problems.append(f"control field read from {frame} disagrees with the encoded CF {known['cf']}")
     if frame not in str(sample.input):
         problems.append(f"prompt does not contain the frame {frame}")
     if not isinstance(sample.target, str):
@@ -221,6 +268,8 @@ def sample_problems(sample: Sample) -> list[str]:
             f"target {sample.target} does not match the pyModeS reference decode "
             f"{canonical(expected)} ({oracle.DECODER})"
         )
+    if "df" in expected and expected["df"] != int(frame[:2], 16) >> 3:
+        problems.append(f"downlink format from the message bits disagrees with pyModeS ({expected['df']})")
     status = "rejected" if expected.get("answer") == "reject" else "decoded"
     if meta.get("expected_status") not in (None, status):
         problems.append(f"expected_status {meta['expected_status']!r} but pyModeS gives {status!r}")

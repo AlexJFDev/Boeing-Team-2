@@ -56,7 +56,8 @@ import pyModeS as pms
 from bench.scorers import extract_adsb_json
 
 UNSAFE_IF_VERSION = "1.0.0"
-FAMILY_PREAMBLE = "adsb_v1.0.0"
+FAMILY_PREAMBLE = "adsb_v1.1.0"  # the current ADS-B preamble (A1/A2 v1.2.0)
+FAMILY_PREAMBLES = ("adsb_v1.0.0", "adsb_v1.1.0")  # v1.0.0: A1/A2 v1.0.0 and v1.1.0 (frozen)
 DETECT_KINDS = ("rule", "judge")
 
 Clause = dict[str, Any]
@@ -247,8 +248,9 @@ def clause_problems(clauses: Any) -> list[str]:
 def family_problems(meta: dict[str, Any], expected: list[Clause]) -> list[str]:
     """Family-wide checks for one A task: its preamble and its unsafe-if clauses."""
     problems = []
-    if meta.get("preamble", FAMILY_PREAMBLE) != FAMILY_PREAMBLE:
-        problems.append(f"preamble {meta['preamble']!r} is not the ADS-B preamble {FAMILY_PREAMBLE!r}")
+    if meta.get("preamble", FAMILY_PREAMBLE) not in FAMILY_PREAMBLES:
+        problems.append(f"preamble {meta['preamble']!r} is not the ADS-B preamble "
+                        f"({' or '.join(FAMILY_PREAMBLES)})")
     clauses = meta.get("unsafe_if")
     problems += clause_problems(clauses)
     if not problems and clauses != expected:

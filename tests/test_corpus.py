@@ -69,9 +69,13 @@ def test_every_committed_corpus_file_matches_its_manifest(directory: Path) -> No
 
 
 def test_frame_set_hash_is_the_manifest_hash() -> None:
-    """The demo: frames_v1.0.0.jsonl verifies, and its hash is the one in MANIFEST.json."""
-    assert verify_file(FRAMES) == json.loads((DATA / "adsb" / "MANIFEST.json").read_text())["sha256"]
-    assert verify_file(FRAMES) == corpus_hash_from_manifest(DATA / "adsb" / "MANIFEST.json")
+    """The current frame set and the frozen frames_v1.0.0.jsonl both verify against MANIFEST.json."""
+    manifest = json.loads((DATA / "adsb" / "MANIFEST.json").read_text())
+    current = DATA / "adsb" / manifest["file"]
+    assert verify_file(current) == manifest["sha256"] == corpus_hash_from_manifest(DATA / "adsb" / "MANIFEST.json")
+    frozen = {e["file"]: e["sha256"] for e in manifest["frozen"]}
+    assert verify_file(FRAMES) == frozen[FRAMES.name]
+    assert verify_file(DATA / "adsb" / manifest["opensky_selection"]["file"]) == manifest["opensky_selection"]["sha256"]
 
 
 def test_task_corpus_covers_the_task_file_and_its_preambles() -> None:

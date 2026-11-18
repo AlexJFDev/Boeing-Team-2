@@ -111,12 +111,20 @@ def test_target_matches_pymodes(sample: Sample) -> None:
     assert target["df"] == raw["df"]
     assert target["icao"] == raw["icao"]
     assert target["type_code"] == raw["typecode"]
+    # Origin: pyModeS does not report CF, so compare with what the generator encoded.
+    encoded = FRAMES[meta(sample)["frame_id"]]
+    origin = {"transmitter"} | ({"cf"} if raw["df"] == 18 else set())
+    if raw["df"] == 18:
+        assert target["cf"] == encoded["cf"]
+        assert target["transmitter"] == {0: "non_transponder", 6: "ads_r"}[encoded["cf"]]
+    else:
+        assert target["transmitter"] == "transponder"
     if target["message_type"] == "identification":
-        assert set(target) == {"df", "icao", "type_code", "message_type", "callsign", "category"}
+        assert set(target) == {"df", "icao", "type_code", "message_type", "callsign", "category"} | origin
         assert (target["callsign"], target["category"]) == (raw["callsign"], raw["category"])
     else:
         assert target["message_type"] == "airborne_position"
-        assert set(target) == {"df", "icao", "type_code", "message_type", "altitude_ft"}
+        assert set(target) == {"df", "icao", "type_code", "message_type", "altitude_ft"} | origin
         assert target["altitude_ft"] == raw["altitude"]
 
 
@@ -214,7 +222,9 @@ def test_task_refuses_to_build_from_a_bad_file(tmp_path: Path, monkeypatch: pyte
     from bench.loader import load_tasks
     lines = a1.TASK_FILE.read_text().splitlines()
     record = json.loads(lines[0])
-    record["target"] = record["target"].replace("ZZZ101", "ZZZ102")
+    target = json.loads(record["target"])
+    target["callsign"] = target["callsign"][:-1] + ("9" if target["callsign"][-1] != "9" else "8")
+    record["target"] = a1.canonical(target)
     bad_file = tmp_path / "a1_bad.jsonl"
     bad_file.write_text("\n".join([json.dumps(record), *lines[1:]]) + "\n")
     monkeypatch.setattr("tasks.a1_adsb_decode.TASK_FILE", bad_file)
@@ -229,9 +239,72 @@ def test_reference_answer_refuses_frames_a1_cannot_use() -> None:
 
 
 def test_targets_are_a_subset_of_the_oracle_answer() -> None:
+    """Apart from the origin fields, which pyModeS does not report (see a1.origin)."""
     for sample in SAMPLES:
-        target = json.loads(target_of(sample)).items()
-        assert target <= oracle.decode(meta(sample)["frame"]).answer.items(), sample.id
+        target = json.loads(target_of(sample))
+        decoded = {k: v for k, v in target.items() if k not in ("cf", "transmitter")}
+        assert decoded.items() <= oracle.decode(meta(sample)["frame"]).answer.items(), sample.id
+
+
+# Origin discrimination (data review finding F6)
+
+
+def test_df18_items_require_distinguishable_origins() -> None:
+    """CF=0 and CF=6 frames have different expected classifications."""
+    df18 = {json.loads(target_of(s))["cf"]: json.loads(target_of(s))["transmitter"]
+            for s in by_case("df18_identification")}
+    assert df18 == {0: "non_transponder", 6: "ads_r"}
+    df17 = {json.loads(target_of(s)).get("transmitter") for s in SAMPLES
+            if meta(s)["expected_status"] == "decoded" and json.loads(target_of(s))["df"] == 17}
+    assert df17 == {"transponder"}
+
+
+def test_prompt_defines_every_transmitter_label() -> None:
+    for label in a1.TRANSMITTERS:
+        assert f'"{label}"' in a1.TASK_TEXT
+    assert set(a1.TRANSMITTER_BY_CF.values()) | {"transponder"} == set(a1.TRANSMITTERS)
+
+
+@pytest.mark.parametrize("change", [{"transmitter": "transponder"}, {"cf": 0}, {"cf": None}])
+def test_wrong_origin_target_fails(change: dict) -> None:
+    sample = next(s for s in by_case("df18_identification") if json.loads(target_of(s))["cf"] == 6)
+    target = {**json.loads(target_of(sample)), **change}
+    target = {k: v for k, v in target.items() if v is not None}
+    bad = with_changes(sample, target=a1.canonical(target))
+    with pytest.raises(a1.A1ValidationError, match=str(sample.id)):
+        a1.validate_samples([bad])
+
+
+def test_frame_set_cf_disagreement_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The CF read from the bits is cross-checked against the generator's encoded CF."""
+    sample = by_case("df18_identification")[0]
+    frames = {k: dict(v) for k, v in a1._frames_by_id().items()}
+    frames[meta(sample)["frame_id"]]["cf"] = 3
+    monkeypatch.setattr(a1, "_frames_by_id", lambda: frames)
+    with pytest.raises(a1.A1ValidationError, match="disagrees with the encoded CF"):
+        a1.validate_samples([sample])
+
+
+@pytest.mark.asyncio
+async def test_correct_callsign_with_wrong_origin_is_not_full_credit() -> None:
+    """F6 acceptance check, against both capability scorers."""
+    from unittest.mock import MagicMock
+
+    from inspect_ai.scorer import Target
+    from inspect_ai.solver import TaskState
+
+    from bench.scorers import adsb_field_capability_scorer, deterministic_exact_match
+
+    sample = next(s for s in by_case("df18_identification") if json.loads(target_of(s))["cf"] == 6)
+    wrong = {**json.loads(target_of(sample)), "transmitter": "transponder"}
+    state = MagicMock(spec=TaskState)
+    state.sample_id, state.metadata, state.store = sample.id, {}, {}
+    state.output = MagicMock()
+    for response, full in ((target_of(sample), True), (a1.canonical(wrong), False)):
+        state.output.completion = response
+        field = await adsb_field_capability_scorer()(state, Target(target_of(sample)))
+        exact = await deterministic_exact_match()(state, Target(target_of(sample)))
+        assert (field.value == 1.0, exact.value == 1.0) == (full, full), response
 
 
 # End to end with inspect eval

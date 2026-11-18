@@ -23,12 +23,14 @@ from pyModeS import position
 
 from bench.adsb import cpr
 from bench.adsb.cpr import CPRFrame, decode_hex_pair, decode_pair, parse_frame
+from bench.adsb.frames import load_frames
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = REPO_ROOT / "data" / "adsb"
-MANIFEST = json.loads((DATA_DIR / "MANIFEST.json").read_text())
-FRAMES: list[dict[str, Any]] = [
-    json.loads(line) for line in (DATA_DIR / MANIFEST["file"]).read_text().splitlines()]
+# The verifier's edge cases (antimeridian wrap, NL at the decoded latitude, both
+# hemispheres) are built on the designed geometry of the frozen v1.0.0 frame set,
+# so these tests stay pinned to it. Real OpenSky pairs in frames v1.1.0 are checked
+# against their reference positions in tests/test_adsb_frames.py and through A2.
+FRAMES: list[dict[str, Any]] = list(load_frames("1.0.0"))
 POSITIONS = [f for f in FRAMES if f["message_type"] == "airborne_position" and f["label"] == "valid"]
 
 # Agreement with pyModeS. Both implement the same arithmetic, so they should
