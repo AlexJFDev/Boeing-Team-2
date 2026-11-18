@@ -23,5 +23,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # data/afdx/ is git-ignored and generated (seeded, deterministic). Without it
+      # tests/test_afdx_traces.py skips every test and CI would pass without checking AFDX.
+      - name: Generate AFDX traces
+        run: python -m bench.afdx.generate_afdx_traces
+
       - name: Run unit tests
         run: pytest
