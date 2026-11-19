@@ -90,7 +90,12 @@ def build_prompt(preamble: str, task_text: str, premises: list[str] | None = Non
     return PREAMBLE_SEPARATOR.join(parts)
 
 
-def _problems(record: dict[str, Any]) -> list[str]:
+def record_problems(record: dict[str, Any]) -> list[str]:
+    """Every schema problem with one task record, each naming its field (empty = valid).
+
+    Used by the loader (stops at the first bad record) and by the task schema
+    validator in CI (bench/validate.py, reports them all).
+    """
     problems = []
     for name in REQUIRED_FIELDS:
         value = record.get(name)
@@ -131,7 +136,7 @@ def make_record_to_sample(preamble_dir: Path = PREAMBLE_DIR):
         task_id = record.get("id")
         where = f"task {task_id!r}" if isinstance(task_id, str) and task_id else f"record {line}"
 
-        problems = _problems(record)
+        problems = record_problems(record)
         if problems:
             raise TaskLoadError(f"{where}: " + "; ".join(problems))
         if task_id in seen:
