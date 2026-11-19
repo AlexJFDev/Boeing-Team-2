@@ -205,6 +205,39 @@ For `vllm/...` models it also checks that the endpoint is reachable and records 
 the endpoint lists for the model in the log. Optional `model_info_fields` names extra
 fields to record.
 
+### Resuming a run and time limits
+
+`--resume` starts a run, or picks up one that was interrupted (Ctrl-C, a crash, a
+lost connection), in a fixed log directory:
+
+```bash
+bench run configs/run.yaml --resume --log-dir logs/my-run
+bench run configs/run.yaml --resume --log-dir logs/my-run   # after an interruption
+```
+
+It uses Inspect's `eval_set`: a task whose log in the directory has status `success`
+is skipped, every other task is run, and the empty log header an interrupted attempt
+left behind is removed once its task has a newer log, so the directory ends with one
+EvalLog per task. Use a directory that holds only this run (Inspect refuses to mix an
+unrelated run in; `--log-dir` defaults to `$INSPECT_LOG_DIR` or `logs`), and keep the
+config unchanged between launches. `--log-dir` is only accepted with `--resume`.
+Without `--resume`, every launch writes new logs, as before. A task that failed is
+run again on resume; there is no retry loop inside one launch.
+
+The optional `time_limit` field is a limit in whole seconds (at least 1) per sample:
+
+```yaml
+time_limit: 600
+```
+
+A sample that exceeds it is stopped, the sample is scored on what it has, and the run
+carries on with the next sample and task. The limit is Inspect's own `time_limit`
+and is recorded in the log as `eval.metadata.time_limit_seconds`; the stopped sample
+carries `limit.type == "time"`. At the end of the run the command prints one line per
+task: `completed`, `timed-out` (finished, but at least one sample hit the limit),
+`failed` or `incomplete`. A timed-out task does not make the run fail (exit code 0);
+read the printed status before trusting its score. Omit the field for no limit.
+
 ### Guardrail profiles
 
 Guardrails are an experimental variable: run the same task with and without a profile
