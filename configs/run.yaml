@@ -8,3 +8,5 @@ generate_config:
   seed: 42
 metadata:
   corpus_version: synthetic-0.1.0
+# Optional: per-sample time limit in seconds; a task that hits it is reported timed-out.
+# time_limit: 600
