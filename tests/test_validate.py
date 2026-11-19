@@ -86,8 +86,10 @@ def codes(report: Report) -> list[str]:
 def test_the_committed_corpus_passes() -> None:
     report = validate()
     assert report.passed, "\n".join(map(str, report.problems))
-    assert report.files_checked == len(list(TASK_DIR.glob("*.jsonl"))) == 9
-    assert report.tasks_checked == sum(len(load_tasks(f)) for f in TASK_DIR.glob("*.jsonl")) == 215
+    # Counted, not hard-coded, so adding a task file does not break this test.
+    files = sorted(TASK_DIR.glob("*.jsonl"))
+    assert files and report.files_checked == len(files)
+    assert report.tasks_checked == sum(len(load_tasks(f)) for f in files)
 
 
 def test_a_new_valid_listed_task_file_passes(tmp_path: Path) -> None:
@@ -212,7 +214,9 @@ def test_a_manifest_entry_without_its_file_is_reported(tmp_path: Path) -> None:
 
 def test_cli_passes_with_exit_0_on_the_committed_corpus(capsys: pytest.CaptureFixture[str]) -> None:
     assert main([]) == 0
-    assert capsys.readouterr().out.strip() == "PASS: task schema check (9 task files, 215 tasks)"
+    files = sorted(TASK_DIR.glob("*.jsonl"))
+    tasks = sum(len(load_tasks(f)) for f in files)
+    assert capsys.readouterr().out.strip() == f"PASS: task schema check ({len(files)} task files, {tasks} tasks)"
 
 
 def test_cli_fails_with_exit_1_and_annotates_the_line(tmp_path: Path,
