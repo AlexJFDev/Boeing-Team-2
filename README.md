@@ -88,7 +88,7 @@ checks. See [docs/setup.md](docs/setup.md#running-from-a-run-config).
 | `scripts/` | Build tools that generate the data, e.g. `scripts/adsb/build_frames.py` |
 | `tests/` | pytest suite (`pytest` from the repo root) |
 | `docs/` | Setup guide and the PR template |
-| `.github/workflows/` | CI on every PR: branch name, secret scan (gitleaks), unit tests (`pytest`), regression set against the baseline (`regression`) |
+| `.github/workflows/` | CI on every PR: branch name, secret scan (gitleaks), unit tests (`pytest`), regression set against the baseline (`regression`), task schema (`schema`) and data boundary (`data-boundary`) |
 | `requirements.txt` | Pinned Python dependencies |
 | `.devcontainer/`, `.vscode/` | Codespaces / VS Code configuration |
 
@@ -116,6 +116,11 @@ Sprint 1 runs Sep 27 to Oct 11, 2026; the full plan runs to the Dec 6 symposium.
   intended, record a new baseline version (`python -m bench.regression record <version>`),
   point `BASELINE_VERSION` in `bench/regression.py` at it in the same PR, and say why
   (full procedure: WBS 1.29).
+- **Corpus checks:** every PR also runs the task schema validator (`python -m bench.validate`)
+  and the data boundary checker (`python -m bench.boundary`). A task file that is
+  malformed, names a missing preamble, is not listed in `data/tasks/MANIFEST.json`, or
+  was edited in place fails `schema`; data from an unapproved source or a real-looking
+  registration or key fails `data-boundary`. Run both locally before pushing.
 - **Secrets:** each person keeps their own `.env` file with their own keys. Never
   commit it.
 - **Versioning:** changes to tasks, scorers, or prompt templates need a version bump.
