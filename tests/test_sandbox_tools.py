@@ -199,8 +199,10 @@ def test_decode_tool_returns_pymodes_fields_from_the_sandbox(run: Any) -> None:
     out = results["decode_tool"]
     assert out.error is None
     decoded = json.loads(out.text)
-    frame = json.loads((REPO_ROOT / "data" / "adsb" / MANIFEST["file"]).read_text()
-                       .splitlines()[0])
+    # The demo frame is from the frozen v1.0.0 corpus, not the current one (v1.1.0
+    # replaced it with real OpenSky frames), so look its ground truth up there by hex.
+    frozen = (REPO_ROOT / "data" / "adsb" / "frames_v1.0.0.jsonl").read_text().splitlines()
+    [frame] = [f for f in map(json.loads, frozen) if f["hex"] == DEMO_FRAME]
     assert decoded == frame["expected"]  # same as the stored ground truth
 
 
