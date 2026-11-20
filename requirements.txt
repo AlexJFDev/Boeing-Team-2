@@ -14,3 +14,8 @@ python-dotenv==1.2.4
 PyYAML==6.0.3
 # Reads the OpenSky avro sample; only scripts/adsb/extract_opensky_profiles.py needs it.
 fastavro==1.13.1
+# inspect_ai.analysis (samples_df / evals_df) refuses to run without both; inspect-ai lists
+# them only as dev extras. Used by bench/safety_telemetry.py (Task 6.3, issue #82).
+# pandas 2.3.x, not 3.x: 3.x drops Python 3.10, which pyproject.toml still allows.
+pandas==2.3.3
+pyarrow==22.0.0
