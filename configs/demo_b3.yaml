@@ -1,0 +1,8 @@
+# configs/demo_b3.yaml  (WBS 3.5, issue #60)
+# python -m runner.preflight configs/demo_b3.yaml
+# python -m bench.arinc429.b3 --show b3-03
+# inspect view
+task: tasks/b3_arinc429_bus_conformance.py
+model: ollama/llama3.1
+generate_config: {temperature: 0, seed: 42}
+metadata: {corpus_version: b3-1.0.0}
