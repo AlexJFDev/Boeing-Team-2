@@ -1,0 +1,32 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [development, production]
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # Matches the interpreter the project's .venv is built with.
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # data/afdx/ is git-ignored and generated (seeded, deterministic). Without it
+      # tests/test_afdx_traces.py skips every test and CI would pass without checking AFDX.
+      - name: Generate AFDX traces
+        run: python -m bench.afdx.generate_afdx_traces
+
+      - name: Run unit tests
+        run: pytest
