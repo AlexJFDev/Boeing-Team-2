@@ -8,6 +8,7 @@
     "a2_cpr_position_v1.2.0.jsonl": "ca1bc57b49353ef148f4a9f4fa5e08f6876878e1270e140f4845bb111557f570",
     "b1_arinc429_word_decode_v1.0.0.jsonl": "fff1f09b516646fee543494e20b9fcf27be12e658c3f30b1defe1c74a7acf5a2",
     "b2_arinc429_ssm_interpretation_v1.0.0.jsonl": "b1e4ffb64ee1e79ca20a3dd7e4a6099c411f46b1aa04e74138ef2c50503fbda1",
+    "b3_arinc429_bus_conformance_v1.0.0.jsonl": "92651c487910392d5a0484ebe15e82d672bb2b89ed579b9962fbfb9ce1aa0bdb",
     "loader_demo_v0.1.0.jsonl": "a86d96bd731691dd046dea3ae1fa785239749a476d324796d1c0f066ff97613f"
   }
 }

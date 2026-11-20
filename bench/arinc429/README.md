@@ -112,7 +112,7 @@ Everything comes from `random.Random(seed)` in a fixed order, so the same argume
 give byte-identical output, and a longer run starts with the shorter run's words.
 
 It does not apply bus conformance rules: an NCD word still carries data, for example.
-Those rules belong to the B3 tasks (3.5).
+Those rules belong to the B3 tasks (3.5); the timing rules are in `conformance.py`.
 
 ## Ground-truth record
 
@@ -230,6 +230,51 @@ python -m runner.preflight configs/demo_b2.yaml           # a real model through
 pytest tests/test_b2_tasks.py
 ```
 
+## B3 bus conformance tasks
+
+`b3.py` builds the B3 task set (WBS 3.5, issue #60): 16 timed word streams, 11 at
+high speed (100 kbit/s) and 5 at low speed (12.5 kbit/s). Each line of a stream gives a
+word's start and end time in microseconds, its label and the word. The model lists
+every non-conforming word and the rule it breaks, as
+`{"violations":[[word_number,"rule"],...]}`:
+
+| Rule | Stated in the task as |
+| --- | --- |
+| `word_timing` | a word lasts 32 bit times ±1% (316.8–323.2 us at high speed) |
+| `gap` | at least 4 bit times of null from the end of one word to the start of the next |
+| `rate_fast` / `rate_slow` | for each label with a stated rate, start-to-start intervals within ±10% of it |
+
+Every rule, the bus speed and each label's rate are in the task's own premises (printed
+after the family preamble under "Premises for this task:"), because they change from task
+to task. The per-label rates are in the paid specification, so, as the catalogue's B3
+note says, the task states the configured rate instead. The same label is stated at
+different rates in different tasks.
+
+Targets come from `conformance.py`, a checker written separately from the stream
+builder: the builder records the faults it injects (a dropped or extra transmission, a
+short gap or overlap, a long or short word), and the build fails unless the checker
+finds exactly those. Cases: 3 conforming controls, rate_slow, rate_fast, gap,
+word_timing, and mixed streams with two faults. Four tasks add a label with no stated
+rate, sent irregularly, which must not be flagged.
+
+The discriminator is that the verdict depends on the stated numbers. Every sample
+stores what a model gets by bringing its own numbers: `contradicting_rate_answer`
+(every stated interval doubled) and `wrong_speed_answer` (the other bus speed). Both
+score 0 on every task.
+
+```bash
+python scripts/arinc429/build_b3_tasks.py                 # rebuild data/tasks/b3_..._v1.0.0.jsonl
+python -m bench.arinc429.b3 --show b3-03                  # validate; print one sample with the checker's measurements
+python scripts/arinc429/demo_b3_scoring.py                # the issue #60 demo
+PYTHONPATH=. inspect eval tasks/b3_arinc429_bus_conformance.py --model mockllm/model
+python -m runner.preflight configs/demo_b3.yaml           # a real model through Ollama
+pytest tests/test_arinc429_conformance.py tests/test_b3_tasks.py
+```
+
+B3 checks timing only. Every word has good parity; the content checks the catalogue
+also lists under B3 (parity, NCD with a populated data field, SDI against installed
+position) are left out of v1.0.0.
+
 ## Sources
 
 - [Wikipedia, ARINC 429](https://en.wikipedia.org/wiki/ARINC_429): word layout,
@@ -243,6 +288,12 @@ pytest tests/test_b2_tasks.py
   labels are octal with bits reversed from transmission order; label 012 (ground speed)
   as 01010000; odd parity.
 - Task catalogue, B1: the 203/204/213/310 bit-reversal table.
+- [ALTA Data Technologies, ARINC Protocol Summary](https://altadt.com/): high speed
+  100 kbit/s ±1%, low speed 12 to 14.5 kbit/s ±1% (B3 premises).
+- [Abaco, ARINC 429 electrical characteristics](https://www.abaco.com/news/what-are-some-arinc-429-electrical-characteristics/n2097)
+  and the AIM ARINC 429 tutorial: sequential words are separated by at least 4 bit
+  times of null (B3 gap rule). The ±1% word-duration limit and the ±10% rate window are
+  project premises stated in each task, not quoted limits.
 
 All are secondary. The AIM ARINC 429 tutorial that the catalogue lists was not reachable
 when this was written (it blocks automated access). The per-digit BCD bit positions below
