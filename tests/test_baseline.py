@@ -63,6 +63,17 @@ def test_shipped_config_covers_every_adsb_and_arinc429_suite() -> None:
     assert cfg["generate_config"]["temperature"] == 0 and cfg["generate_config"]["seed"] == 42
 
 
+def test_arc_config_fits_the_arc_limits() -> None:
+    cfg = baseline.load_and_check(REPO_ROOT / "configs" / "baseline_v1.2.0.yaml")
+    assert cfg["tasks"] == baseline.load_and_check(CONFIG)["tasks"]  # same six suites as v1.0.0
+    assert all(m.startswith("vllm/") for m in cfg["models"]) and len(cfg["models"]) == 3
+    gen = cfg["generate_config"]
+    assert gen["temperature"] == 0 and gen["seed"] == 42
+    assert gen["max_tokens"] <= 8000  # ARC's non-streaming cap
+    assert gen["max_connections"] * len(cfg["models"]) <= 20  # ARC: 20 in flight per user
+    assert gen["max_connections"] <= 10  # ARC: 10 in flight per model
+
+
 @pytest.mark.parametrize(("change", "message"), [
     ({"models": None}, "missing required field models"),
     ({"generate_config": {"seed": 42}}, "generate_config.temperature"),
@@ -173,6 +184,7 @@ def test_report_files(report: dict[str, Any], rehearsal_dir: Path) -> None:
     assert json.loads((out / "report.json").read_text())["review"] == report["review"]
     rows = (out / "per_sample.csv").read_text().splitlines()
     assert len(rows) == 1 + 45 * 2
+    assert rows[0].endswith("no_answer,stop_reason,answer")
 
 
 def test_a_missing_pair_is_reported_and_never_flagged(rehearsal_dir: Path, tmp_path: Path) -> None:
@@ -204,6 +216,54 @@ def test_report_only_rebuilds_from_logs(rehearsal_dir: Path, capsys: pytest.Capt
     assert cli.main(["baseline", "--report-only", str(rehearsal_dir)]) == 0
     out = capsys.readouterr().out
     assert "flagged for ground-truth review" in out and "b3_arinc429_bus_conformance" in out
+
+
+@pytest.fixture(scope="module")
+def blank_report(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
+    """trap-a plus a stand-in that returns no text on B3, as a model cut off by max_tokens does."""
+    from inspect_ai.model import ModelOutput, ModelUsage, get_model
+
+    prompts = rehearsal.samples_by_prompt()
+
+    def respond(messages, tools, tool_choice, config) -> ModelOutput:
+        sample = prompts[messages[-1].text]
+        sub = (sample.metadata or {}).get("subfamily")
+        text = "" if sub == "B3" else rehearsal.answer(sample, "standin-trap-b")
+        output = ModelOutput.from_content("mockllm/standin-blank", text)
+        output.usage = ModelUsage(input_tokens=0, output_tokens=0, total_tokens=0)
+        return output
+
+    log_dir = tmp_path_factory.mktemp("blank") / "v1.0.0"
+    models = [rehearsal.standin("standin-trap-a", prompts),
+              get_model("mockllm/standin-blank", custom_outputs=respond)]
+    assert baseline.run(config(tasks=SMALL_TASKS), log_dir, models=models, display="none")
+    return baseline_report.write_report(log_dir)
+
+
+def test_blank_answers_are_reported_as_no_answer(blank_report: dict[str, Any]) -> None:
+    b3 = next(r for r in blank_report["runs"]
+              if r["task"] == "b3_arinc429_bus_conformance" and r["model"] == "mockllm/standin-blank")
+    assert b3["no_answer"] == 16 and b3["stop_reasons"] == {"stop": 16}
+    assert b3["capability_mean"] == 0.0  # the mean is still the scorer's
+    sample = next(s for s in blank_report["samples"] if s["sample_id"] == "b3-03")
+    assert sample["results"]["mockllm/standin-blank"]["no_answer"] is True
+    assert sample["results"]["mockllm/standin-trap-a"]["no_answer"] is False
+
+
+def test_blank_answers_keep_samples_out_of_the_review(blank_report: dict[str, Any]) -> None:
+    flagged = {(r["task"], r["sample_id"]) for r in blank_report["review"]}
+    assert not any(t == "b3_arinc429_bus_conformance" for t, _ in flagged)
+    unreviewable = {r["sample_id"] for r in blank_report["unreviewable"]}
+    assert unreviewable == {f"b3-{n:02d}" for n in range(1, 17)}
+    assert blank_report["unreviewable"][0]["no_answer"] == ["mockllm/standin-blank"]
+    assert any(t == "b2_arinc429_ssm_interpretation" for t, _ in flagged)  # B2 still flagged as before
+
+
+def test_report_records_max_tokens_and_shows_no_answer(blank_report: dict[str, Any]) -> None:
+    assert {r["max_tokens"] for r in blank_report["runs"]} == {1024}
+    md = render = baseline_report.render_markdown(blank_report)
+    assert "no answer (stop)" in md and "**Not flagged (16 samples):**" in render
+    assert "max_tokens" in md
 
 
 def test_empty_log_dir_is_an_error(tmp_path: Path) -> None:
