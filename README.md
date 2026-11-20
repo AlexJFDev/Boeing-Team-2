@@ -77,17 +77,21 @@ fails, and 2 if the config is refused. If `bench` is not found, run
 `pip install -r requirements.txt` again. Plain `inspect eval` is fine for quick
 checks. See [docs/setup.md](docs/setup.md#running-from-a-run-config).
 
+To run the ADS-B and ARINC 429 suites against several models at once and get a
+per-task report, use `bench baseline configs/baseline_v1.0.0.yaml`
+([docs/baseline.md](docs/baseline.md)).
+
 ## Repository layout
 
 | Path | Contents |
 | --- | --- |
 | `tasks/` | Inspect AI tasks; currently the install smoke test |
-| `runner/` | The `bench run` command (`runner/cli.py`), run-config pre-flight checks, versioned prompt templates |
+| `runner/` | The `bench run` and `bench baseline` commands (`runner/cli.py`), run-config pre-flight checks, versioned prompt templates |
 | `bench/` | Runner package; `bench/adsb/oracle.py` is the pyModeS ground-truth oracle, `bench/adsb/cpr.py` the independent CPR position verifier, `bench/arinc429/generator.py` the seeded ARINC 429 word generator |
 | `data/` | Versioned task data with manifests; `data/adsb/` holds the ADS-B frame set |
 | `scripts/` | Build tools that generate the data, e.g. `scripts/adsb/build_frames.py` |
 | `tests/` | pytest suite (`pytest` from the repo root) |
-| `docs/` | Setup guide and the PR template |
+| `docs/` | Setup guide, baseline guide and the PR template |
 | `.github/workflows/` | CI: branch-name check |
 | `requirements.txt` | Pinned Python dependencies |
 | `.devcontainer/`, `.vscode/` | Codespaces / VS Code configuration |
