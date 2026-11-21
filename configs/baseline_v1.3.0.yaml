@@ -1,0 +1,51 @@
+# Baseline evaluation of the ADS-B and ARINC 429 suites (WBS 3.8, issue #63), VT ARC models,
+# streamed.
+#   bench baseline configs/baseline_v1.3.0.yaml
+# Every task runs against every model with Inspect's eval_set. Logs and the report go
+# to logs/baseline/v1.3.0 (git-ignored); running again resumes an interrupted baseline.
+#
+# Same three VT ARC LLM API models as v1.2.0
+# (https://docs.arc.vt.edu/ai/011_llm_api_arc_vt_edu.html), but streamed:
+#   v1.2.0 was capped at ARC's 8000-token limit for non-streaming requests, and all 203
+#   blank answers stopped on max_tokens (DeepSeek 86, GLM 88 and gpt-oss 29 of 129).
+#   ARC says to use streaming for longer outputs. Inspect's vllm/ provider can't stream,
+#   so the models go through Inspect's OpenAI-compatible provider (openai-api/arc/...),
+#   with model_args {stream: true}.
+#
+# Needs in .env (instead of the VLLM_ pair):
+#   ARC_BASE_URL=https://llm-api.arc.vt.edu/api/v1
+#   ARC_API_KEY=<your ARC key>
+# and the VT VPN when off campus. Each endpoint is queried before any model call.
+#
+#   max_tokens 32000     room for max-effort reasoning; prompts are short, well inside the
+#                        128k context (GLM-5.3 counts input plus output against it)
+#   max_connections 5    ARC allows 10 requests in flight per model and 20 across all models
+#                        per user; 3 models x 5 stays under both
+#   reasoning effort     not set: each model runs at its endpoint default
+#                        (gpt-oss-120b medium, GLM-5.3 max, DeepSeek-V4.1-Flash high)
+# GLM-5.3 is fair-queued: a request that waits more than 9 minutes gets HTTP 503, and one
+# request may run at most 30 minutes. eval_set retries failed tasks (retry_attempts).
+baseline_version: 1.3.0
+tasks:
+  - tasks/a1_adsb_decode.py               # A1 v1.2.0, 29 samples
+  - tasks/a2_cpr_position.py              # A2 v1.2.0, 28 samples
+  - tasks/b1_arinc429_word_decode.py      # B1 v1.0.0, 27 samples
+  - tasks/b2_arinc429_ssm_interpretation.py  # B2 v1.0.0, 14 samples
+  - tasks/b3_arinc429_bus_conformance.py  # B3 v1.0.0, 16 samples
+  - tasks/b4_arinc429_fault_vs_injection.py  # B4 v1.0.0, 15 samples
+models:
+  - openai-api/arc/gpt-oss-120b
+  - openai-api/arc/GLM-5.3
+  - openai-api/arc/DeepSeek-V4.1-Flash
+model_args:
+  stream: true
+generate_config:
+  temperature: 0
+  seed: 42
+  max_tokens: 32000
+  max_connections: 5
+metadata:
+  corpus_version: protocol-suites-1.0.0
+  suites: {a1: 1.2.0, a2: 1.2.0, b1: 1.0.0, b2: 1.0.0, b3: 1.0.0, b4: 1.0.0}
+  endpoint: VT ARC LLM API (llm-api.arc.vt.edu), streamed
+retry_attempts: 3

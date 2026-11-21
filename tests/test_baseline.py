@@ -184,7 +184,7 @@ def test_report_files(report: dict[str, Any], rehearsal_dir: Path) -> None:
     assert json.loads((out / "report.json").read_text())["review"] == report["review"]
     rows = (out / "per_sample.csv").read_text().splitlines()
     assert len(rows) == 1 + 45 * 2
-    assert rows[0].endswith("no_answer,stop_reason,answer")
+    assert rows[0].endswith("no_answer,cut_off,stop_reason,answer")
 
 
 def test_a_missing_pair_is_reported_and_never_flagged(rehearsal_dir: Path, tmp_path: Path) -> None:

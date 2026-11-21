@@ -48,24 +48,40 @@ To change the models, edit `models` in a copy of the config and give it a new
 
 ### On VT ARC
 
-`configs/baseline_v1.2.0.yaml` runs the same six tasks against three models from the
-[VT ARC LLM API](https://docs.arc.vt.edu/ai/011_llm_api_arc_vt_edu.html):
-`gpt-oss-120b`, `GLM-5.3` and `DeepSeek-V4.1-Flash`. Set
-`VLLM_BASE_URL=https://llm-api.arc.vt.edu/api/v1` and `VLLM_API_KEY` in your `.env`, and
-connect to the VT VPN when off campus. Then run:
+Use `configs/baseline_v1.3.0.yaml`. It runs the same six tasks against three models from
+the [VT ARC LLM API](https://docs.arc.vt.edu/ai/011_llm_api_arc_vt_edu.html):
+`gpt-oss-120b`, `GLM-5.3` and `DeepSeek-V4.1-Flash`. Set these in your `.env`, and connect
+to the VT VPN when off campus:
 
-```bash
-bench baseline configs/baseline_v1.2.0.yaml
+```
+ARC_BASE_URL=https://llm-api.arc.vt.edu/api/v1
+ARC_API_KEY=<your ARC key>
 ```
 
-Its settings follow ARC's published limits. `max_tokens` is 8000, ARC's cap for
-non-streaming requests. In v1.1.0, with 4096, gpt-oss returned no answer on 62 of 129
-samples. `max_connections` is 5, because ARC allows 10 requests per model and 20 in
-total per user. Reasoning effort is left at each model's endpoint default (gpt-oss
-medium, GLM max, DeepSeek high), and the report should say so. For another ARC
-model, copy the file, change `models` and give it a new `baseline_version`. As with `bench run`, each vLLM endpoint is queried before the run: an
-unreachable endpoint exits with 2, and what the endpoint lists for the model is recorded
-in every log under `endpoint_models`. The Slurm side is the VT ARC smoke test's (WBS 1.21).
+Then run:
+
+```bash
+bench baseline configs/baseline_v1.3.0.yaml
+```
+
+**Why it streams.** ARC caps non-streaming requests at 8000 output tokens and says to
+stream longer outputs. The reasoning models need more: in v1.2.0, which used Inspect's
+`vllm/` provider at the 8000 cap, all 203 blank answers stopped on `max_tokens`
+(DeepSeek 86, GLM 88 and gpt-oss 29 of 129). Inspect's `vllm/` provider can't stream,
+so v1.3.0 calls the models through Inspect's OpenAI-compatible provider
+(`openai-api/arc/<model>`, which reads `ARC_BASE_URL` and `ARC_API_KEY`) with
+`model_args: {stream: true}`, and raises `max_tokens` to 32000.
+
+Other settings follow ARC's published limits. `max_connections` is 5, because ARC allows
+10 requests per model and 20 in total per user. Reasoning effort is left at each model's
+endpoint default (gpt-oss medium, GLM max, DeepSeek high), and the report should say so.
+As with `vllm/` models, each `openai-api/...` endpoint is queried before the run. An
+unset `ARC_BASE_URL`, an unreachable endpoint or an unlisted model exits with 2, and what
+the endpoint lists for each model is recorded in every log.
+
+`configs/baseline_v1.2.0.yaml` (the `vllm/` version, capped at 8000) is kept for the
+record. For another ARC model, copy v1.3.0, change `models` and give it a new
+`baseline_version`.
 
 ## The report
 
@@ -78,8 +94,8 @@ in every log under `endpoint_models`. The Slurm side is the VT ARC smoke test's 
 | `per_sample.csv` | One row per sample and model |
 
 Each pair's row also records the task version, the capability scorer used, temperature,
-seed, `max_tokens`, how many samples got no answer (with stop reasons), and the git commit
-from its EvalLog. Open the logs themselves with:
+seed, `max_tokens`, its `model_args` (for example `stream=True`), how many samples got no
+answer (with stop reasons) or were cut off, and the git commit from its EvalLog. Open the logs themselves with:
 
 ```bash
 inspect view --log-dir logs/baseline/v1.0.0
@@ -120,7 +136,8 @@ Rules for the flag:
 - A sample is flagged only when every model in the run has a score for it. A
   task-model pair with no successful log is listed as missing, and its samples are not
   flagged.
-- A sample where any model returned no text at all is not flagged. A blank answer, usually
+- A sample where any model returned no text at all, or was cut off by `max_tokens`
+  partway through its answer, is not flagged. A blank answer, usually
   a reasoning model cut off by `max_tokens`, says nothing about the item. It still scores 0
   in the capability mean, but the report counts it under "No answer" with the model's stop
   reason, and lists such samples separately as not reviewable. Rerun those models with a

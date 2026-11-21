@@ -25,6 +25,8 @@ model has a score for it, and a run with one model flags every miss, which the r
 says. A sample where any model returned no text at all (a blank answer, usually cut off
 by max_tokens while reasoning) is not flagged either: it is listed separately as not
 reviewable, with each model's stop reason, because a blank says nothing about the item.
+The same holds for an answer cut off by max_tokens partway through, which the report
+counts as cut off.
 
 When a task has more than one log for the same model, as after a retry, the newest
 successful one is used. Task-model pairs with no successful log are listed as missing.
@@ -43,7 +45,9 @@ from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
 
 # 1.1.0: a blank answer is reported as "no answer" and keeps its sample out of the review;
 # max_tokens and each answer's stop reason are recorded.
-REPORT_VERSION = "1.1.0"
+# 1.2.0: an answer cut off by max_tokens partway through counts like a blank one for the
+# review, and each run's model_args (e.g. stream) are recorded.
+REPORT_VERSION = "1.2.0"
 SAFETY_SCORERS = ("unsafe_if_rule_scorer",)
 REPORT_DIR = "report"
 
@@ -61,6 +65,11 @@ class Cell:
     def no_answer(self) -> bool:
         """The model returned no text at all, e.g. cut off by max_tokens while reasoning."""
         return not self.answer.strip()
+
+    @property
+    def cut_off(self) -> bool:
+        """The model hit max_tokens: blank, or an answer stopped partway through."""
+        return self.no_answer or self.stop_reason == "max_tokens"
 
 
 @dataclass
@@ -90,7 +99,9 @@ class Run:
     temperature: float | None = None
     seed: int | None = None
     max_tokens: int | None = None
+    model_args: dict[str, Any] = field(default_factory=dict)
     no_answer: int = 0
+    cut_off: int = 0  # answers that hit max_tokens but are not blank
     stop_reasons: dict[str, int] = field(default_factory=dict)
     commit: str | None = None
     created: str = ""
@@ -145,6 +156,7 @@ def build_report(log_dir: Path) -> dict[str, Any]:
                   capability_scorer=cap_name, samples=len(samples),
                   temperature=config.temperature if config else None, seed=config.seed if config else None,
                   max_tokens=config.max_tokens if config else None,
+                  model_args=dict(log.eval.model_args or {}),
                   commit=log.eval.revision.commit if log.eval.revision else None, created=log.eval.created)
         values = []
         for s in samples:
@@ -161,6 +173,7 @@ def build_report(log_dir: Path) -> dict[str, Any]:
             row.cells[model] = cell
             run.stop_reasons[stop or "none"] = run.stop_reasons.get(stop or "none", 0) + 1
             run.no_answer += int(cell.no_answer)
+            run.cut_off += int(cell.cut_off and not cell.no_answer)
             if cap is not None:
                 values.append(cap)
             if checked:
@@ -180,9 +193,10 @@ def build_report(log_dir: Path) -> dict[str, Any]:
         entry = {"task": row.task, "sample_id": row.sample_id, "case": row.case,
                  "target": row.target, "task_text": row.task_text,
                  "answers": {m: row.cells[m].answer for m in models}}
-        blank = [m for m in models if row.cells[m].no_answer]
+        blank = [m for m in models if row.cells[m].cut_off]
         if blank:
-            # Every model scored 0, but some gave no answer: that says nothing about the item.
+            # Every model scored 0, but some gave no (complete) answer: that says nothing
+            # about the item.
             unreviewable.append({**entry, "no_answer": blank,
                                  "stop_reasons": {m: row.cells[m].stop_reason for m in blank}})
         else:
@@ -196,7 +210,8 @@ def build_report(log_dir: Path) -> dict[str, Any]:
         "missing": missing,
         "failed": failed,
         "samples": [{"task": r.task, "sample_id": r.sample_id, "case": r.case, "target": r.target,
-                     "results": {m: {**vars(c), "no_answer": c.no_answer} for m, c in r.cells.items()}}
+                     "results": {m: {**vars(c), "no_answer": c.no_answer, "cut_off": c.cut_off}
+                                 for m, c in r.cells.items()}}
                     for r in sorted(rows.values(), key=lambda r: (r.task, r.sample_id))],
         "review": review,
         "unreviewable": unreviewable,
@@ -219,9 +234,15 @@ def _cell(result: dict[str, Any]) -> str:
     if result.get("no_answer"):
         return f"no answer ({result.get('stop_reason') or '?'})"
     text = _fmt(result["capability"], 1)
+    if result.get("cut_off"):
+        text += " (cut off)"
     if result["safety"] == 0.0:
         text += " (unsafe)"
     return text
+
+
+def _args(model_args: dict[str, Any]) -> str:
+    return ", ".join(f"{k}={v}" for k, v in sorted(model_args.items())) or "-"
 
 
 def _short(text: str, limit: int = 80) -> str:
@@ -235,10 +256,12 @@ def render_markdown(report: dict[str, Any]) -> str:
            f"Report {report['report_version']}. Capability and safety are separate columns and "
            "are never combined. Safety counts only samples the unsafe-if rules checked. "
            "A blank answer scores 0 in the capability mean but is counted under No answer, "
-           "with the reason the model stopped.", "",
+           "with the reason the model stopped; an answer cut off by max_tokens partway "
+           "through is counted under Cut off. Neither makes a sample reviewable.", "",
            "## Summary by task and model", "",
-           "| Task | Version | Model | Samples | Capability (mean) | No answer | Unsafe / checked | max_tokens | Log |",
-           "| --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+           "| Task | Version | Model | Samples | Capability (mean) | No answer | Cut off | Unsafe / checked "
+           "| max_tokens | Model args | Log |",
+           "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
     for r in report["runs"]:
         safety = f"{r['unsafe']} / {r['checked']}" if r["checked"] else "not checked"
         blank = str(r["no_answer"]) if r["no_answer"] else "0"
@@ -246,8 +269,8 @@ def render_markdown(report: dict[str, Any]) -> str:
             stops = ", ".join(f"{k} {v}" for k, v in sorted(r["stop_reasons"].items()))
             blank += f" (stop reasons: {stops})"
         out.append(f"| {r['task']} | {r['task_version']} | {r['model']} | {r['samples']} | "
-                   f"{_fmt(r['capability_mean'])} | {blank} | {safety} | {r['max_tokens'] or '-'} | "
-                   f"`{r['log']}` |")
+                   f"{_fmt(r['capability_mean'])} | {blank} | {r['cut_off']} | {safety} | "
+                   f"{r['max_tokens'] or '-'} | {_args(r['model_args'])} | `{r['log']}` |")
     if report["missing"]:
         out += ["", "**Missing task-model pairs (no successful log):** " +
                 ", ".join(f"{m['task']} x {m['model']}" for m in report["missing"])]
@@ -262,7 +285,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         out.append("No sample scored 0 for every model.")
     if report["unreviewable"]:
         out += ["", f"**Not flagged ({len(report['unreviewable'])} samples):** every model scored 0, "
-                "but at least one gave no answer, so the result says nothing about the item. "
+                "but at least one gave no answer or was cut off, so the result says nothing about "
+                "the item. "
                 "Rerun those models (for example with a larger max_tokens) before reviewing them.", "",
                 "| Task | Sample | Case | No answer from |", "| --- | --- | --- | --- |"]
         out += [f"| {r['task']} | {r['sample_id']} | {r['case'] or '-'} | "
@@ -290,12 +314,13 @@ def write_report(log_dir: Path) -> dict[str, Any]:
     with (out / "per_sample.csv").open("w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["task", "sample_id", "case", "model", "capability", "safety", "no_answer",
-                         "stop_reason", "answer"])
+                         "cut_off", "stop_reason", "answer"])
         for s in report["samples"]:
             for model, r in sorted(s["results"].items()):
                 writer.writerow([s["task"], s["sample_id"], s["case"] or "", model,
                                  "" if r["capability"] is None else r["capability"],
                                  "" if r["safety"] is None else r["safety"], r["no_answer"],
+                                 r["cut_off"],
                                  r["stop_reason"] or "", r["answer"]])
     return report
 
@@ -305,6 +330,8 @@ def summary_text(report: dict[str, Any]) -> str:
     for r in report["runs"]:
         safety = f"{r['unsafe']}/{r['checked']}" if r["checked"] else "-"
         blank = f"{r['no_answer']}/{r['samples']}" if r["no_answer"] else "-"
+        if r["cut_off"]:
+            blank += f" +{r['cut_off']} cut"
         lines.append(f"{r['task']:<34} {r['model']:<28} {_fmt(r['capability_mean']):>10} "
                      f"{blank:>10} {safety:>15}")
     lines.append(f"\n{len(report['review'])} sample(s) flagged for ground-truth review: "
@@ -313,7 +340,7 @@ def summary_text(report: dict[str, Any]) -> str:
         lines.append(f"  {r['task']} {r['sample_id']} ({r['case'] or '-'})")
     if report["unreviewable"]:
         lines.append(f"{len(report['unreviewable'])} more scored 0 for every model but include a model "
-                     "that gave no answer; they are not flagged (see report.md).")
+                     "that gave no answer or was cut off; they are not flagged (see report.md).")
     if report["missing"]:
         lines.append(f"{len(report['missing'])} task-model pair(s) have no successful log.")
     lines.append(f"Report: {Path(report['log_dir']) / REPORT_DIR / 'report.md'}")

@@ -12,8 +12,13 @@ The config is checked before any model call, with the same reproducibility rules
 ``bench run`` (CLAUDE.md rule 3): ``models``, ``generate_config.temperature``,
 ``generate_config.seed`` and ``metadata.corpus_version`` are required, and an unknown
 key is refused. A refused config exits with code 2 and writes no log. As with
-``bench run``, each ``vllm/...`` model's endpoint is queried first: an unreachable
-endpoint also exits with 2, and what it lists for the model is recorded in every log.
+``bench run``, each ``vllm/...`` or ``openai-api/<service>/...`` model's endpoint is
+queried first: an unreachable endpoint also exits with 2, and what it lists for the
+model is recorded in every log.
+
+``model_args`` is passed to every model, e.g. ``{stream: true}`` for an
+``openai-api/...`` model on an endpoint that caps non-streaming output (VT ARC caps it
+at 8000 tokens). Inspect records it in each EvalLog.
 
 Logs go to ``logs/baseline/v<baseline_version>`` (git-ignored). Running the same
 config again resumes: ``eval_set`` skips task-model pairs that already have a complete
@@ -37,12 +42,12 @@ from inspect_ai import eval_set
 from inspect_ai.model import GenerateConfig, Model
 
 from bench import baseline_report
-from runner.endpoint import EndpointError, vllm_model_metadata
+from runner.endpoint import EndpointError, openai_api_model_metadata, vllm_model_metadata
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LOG_ROOT = REPO_ROOT / "logs" / "baseline"
 
-ALLOWED = ("baseline_version", "tasks", "models", "generate_config", "metadata",
+ALLOWED = ("baseline_version", "tasks", "models", "generate_config", "model_args", "metadata",
            "retry_attempts", "max_tasks")
 REQUIRED = ("baseline_version", "tasks", "models", "generate_config.temperature",
             "generate_config.seed", "metadata.corpus_version")
@@ -78,6 +83,9 @@ def load_and_check(path: str | Path) -> dict[str, Any]:
             problems.append(f"{key} must be a non-empty list of strings")
         elif value is not None and len(set(value)) != len(value):
             problems.append(f"{key} lists the same entry twice")
+    model_args = cfg.get("model_args")
+    if model_args is not None and not isinstance(model_args, dict):
+        problems.append("model_args must be a mapping, e.g. {stream: true}")
     for task in cfg.get("tasks") or []:
         if isinstance(task, str) and not (REPO_ROOT / task.split("@")[0]).is_file():
             problems.append(f"task file {task} does not exist")
@@ -87,12 +95,14 @@ def load_and_check(path: str | Path) -> dict[str, Any]:
 
 
 def endpoint_metadata(models: list[str]) -> dict[str, Any]:
-    """What each vllm/... model's endpoint lists for it, as ``bench run`` records.
+    """What each hosted model's endpoint lists for it, as ``bench run`` records.
 
-    Raises EndpointError, before any model call, when an endpoint can't be reached or
-    doesn't list the model. Other providers record nothing here.
+    Covers ``vllm/...`` and ``openai-api/<service>/...`` models. Raises EndpointError,
+    before any model call, when an endpoint can't be reached or doesn't list the model.
+    Other providers record nothing here.
     """
-    found = {m: meta["endpoint_model"] for m in models if (meta := vllm_model_metadata(m))}
+    found = {m: meta["endpoint_model"] for m in models
+             if (meta := vllm_model_metadata(m) or openai_api_model_metadata(m))}
     return {"endpoint_models": found} if found else {}
 
 
@@ -110,6 +120,7 @@ def run(cfg: dict[str, Any], log_dir: Path, models: list[str | Model] | None = N
         model=models if models is not None else cfg["models"],
         log_dir=str(log_dir),
         retry_attempts=cfg.get("retry_attempts", 3),
+        model_args=cfg.get("model_args") or {},
         max_tasks=cfg.get("max_tasks"),
         metadata={**cfg["metadata"], "baseline_version": cfg["baseline_version"],
                   **(extra_metadata or {})},

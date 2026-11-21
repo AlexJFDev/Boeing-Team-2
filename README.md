@@ -78,8 +78,9 @@ fails, and 2 if the config is refused. If `bench` is not found, run
 checks. See [docs/setup.md](docs/setup.md#running-from-a-run-config).
 
 To run the ADS-B and ARINC 429 suites against several models at once and get a
-per-task report, use `bench baseline configs/baseline_v1.0.0.yaml`
-([docs/baseline.md](docs/baseline.md)).
+per-task report, use `bench baseline configs/baseline_v1.3.0.yaml` (VT ARC models,
+streamed) or `configs/baseline_v1.0.0.yaml` (local Ollama models). See
+[docs/baseline.md](docs/baseline.md).
 
 ## Repository layout
 
