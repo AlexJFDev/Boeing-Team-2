@@ -694,3 +694,178 @@ demo. On a Windows checkout with `core.autocrlf=true`, the prompt file's hash do
 match `prompts/manifest.json`, so `bench run` refuses it. That is the known
 `test_prompts.py` line-ending issue, which needs its own fix. The tests cover that
 metadata shape with built logs.
+
+&nbsp;
+---
+&nbsp;
+---
+&nbsp;
+---
+&nbsp;
+
+# Airworthiness compliance summary (Task 6.4)
+
+`bench/compliance_summary.py` reads finished Inspect logs and lists every safety finding
+they graded, with the source each one is graded against. The 6.3 refusal and
+injection-compliance rates appear in the same report (`bench/safety_telemetry.py`; their
+definitions are in "Safety telemetry: refusal rate and injection-compliance rate" above). The summary takes those rates from
+`aggregate()` without changing them.
+
+**This summary traces findings to sources. It does not determine DO-326A or any other
+airworthiness compliance.** As of catalogue v1.0.0, no finding has a section-level citation.
+The repo holds no DO-326A, ARINC 429 or ARINC 664 section text for any graded finding (see
+"Citation catalogue" below).
+
+## Run it
+
+```bash
+python -m bench.compliance_summary logs/                     # every .eval in a directory
+python -m bench.compliance_summary logs/a.eval logs/b.eval --out logs/compliance_summary
+python -m bench.compliance_summary logs/ --no-write          # print only
+python -m bench.compliance_summary logs/ --citations data/safety/citations_v1.0.0.json
+python scripts/demo_compliance_summary.py                    # mockllm demo, both cases
+```
+
+| Exit | Meaning |
+|---|---|
+| 0 | Summary printed, and written unless `--no-write` |
+| 1 | No safety-labeled sample in the logs (same as 6.3) |
+| 2 | Refused, nothing written: no logs or a bad path, an invalid citation catalogue, or **a graded finding with no citation** |
+
+Exit 2 matches `bench run`, which uses 2 when it refuses a config and writes no log. The
+message says which of the three cases happened.
+
+Output files go in `logs/compliance_summary/` (git-ignored):
+
+- `compliance_summary_<UTC>.json`: the full summary.
+- `compliance_summary_<UTC>.csv`: the findings table.
+
+## What a finding is
+
+A finding is a finding type in one group (model, scripted persona, guardrail profile name,
+version and sha256, the same group key as 6.3):
+
+| Kind | ID | Graded by | Defined in |
+|---|---|---|---|
+| Unsafe-if clause | `a1.corrupt_frame_trusted`, `a2.position_without_basis`, ... | `unsafe_if_rule_scorer` (`bench/safety.py`) | `bench/adsb/unsafe_if.py` |
+| D2 vector | `V01` ... `V16` | `d2_safety` (`bench/acars/d2_harness.py`) | `data/acars/d2_vectors_v0.1.0.json` |
+
+The IDs come from the score metadata in the log: the `flagged`, `passed`, `judge_pending`
+and `errors` lists for unsafe-if clauses, and `vector_id` for D2.
+
+| Column | Meaning |
+|---|---|
+| `n` | Attempts (sample x epoch) that carried the finding |
+| `graded` | `unsafe` + `safe` + `unparseable` |
+| `unsafe` | A rule clause flagged the reply, or a D2 injected attempt obeyed |
+| `safe` | A rule clause passed, or a D2 injected attempt resisted |
+| `unparseable` | A D2 injected attempt whose reply could not be parsed |
+| `pending` | A judge clause, or D2 `needs_judge`: waits for the judge model (6.7) |
+| `clause_errors` | A rule clause the scorer could not run; not graded |
+
+A finding is **graded** when a scorer reached a verdict on it: an unsafe-if rule clause that
+was flagged or passed, or a D2 injected attempt that was obeyed, resisted or unparseable.
+Judge-only clauses and `needs_judge` attempts wait for the judge model (WBS 6.7). They are
+listed with their counts, but they need no citation until they are graded.
+
+D2 control attempts are `not_applicable` and are not findings. Tasks with no safety
+scorer are not findings either; 6.3 lists them under `safety_telemetry.excluded`.
+
+The summary only reads logs; it never writes, rewrites or deletes one.
+
+## The uncited-finding rule
+
+Every **graded** finding must have an entry in the citation catalogue. If one does not,
+`summarize()` raises `UncitedFindingError` before anything is written, and the CLI exits 2.
+The message names each such finding together with its scorer, task, log and graded count:
+
+```
+summary not generated: 1 graded safety finding(s) have no citation in citations_v1.0.0.json:
+demo.uncited_clause (unsafe_if_rule_scorer; task demo_uncited_finding, <log>.eval, 1 graded
+sample(s)). Add each to a new citation catalogue version (never edit citations_v1.0.0.json in place).
+```
+
+A finding that is only pending (judge-only and never graded) does not need a citation yet.
+It is listed with status `uncited_pending`. Once 6.7 grades it, it must be added to the
+catalogue, or generation fails. A graded score with no finding ID (for example, a D2 score
+missing `vector_id`) is named `<missing finding id>` and fails the same way.
+
+## Citation catalogue
+
+`data/safety/citations_v<version>.json` has one entry per finding ID:
+
+| Key | Meaning |
+|---|---|
+| `finding_id`, `family`, `kind` | What the entry covers (`kind`: `unsafe_if_clause` or `d2_vector`) |
+| `standard` | The standard or reference named by the source |
+| `section` | Section number; only when `status` is `section` |
+| `tag` | Item in a taxonomy (for example `LLM01`); only when `status` is `taxonomy` |
+| `source_file` | A file in this repo that documents the source; it must exist |
+| `source_locator` | Where in that file |
+| `status` | `section`, `source_no_section` or `taxonomy` |
+| `notes` | Limits of the citation |
+
+The summary header counts distinct findings for each status, plus the section-level
+citations for DO-326A, ARINC 429 and ARINC 664:
+
+```
+Citations: section 0 | source_no_section 2 | taxonomy 16 | uncited_pending 3 | DO-326A 0, ARINC 429 0, ARINC 664 0
+```
+
+Rules for the catalogue:
+
+- **Never edit a catalogue in place.** Copy it to a new version file and pass it with
+  `--citations` (or change `DEFAULT_CATALOGUE`). The summary records the catalogue's
+  path, version and sha256.
+- **Give no section number unless repo text states it for the whole finding** (CLAUDE.md
+  rule 5). The real DO-326A, ARINC 429 and ARINC 664 texts are paywalled, and the team's
+  secondary sources do not give sections for these findings.
+- Cite only files that exist. `docs/acars_d2_vectors.md`, which the D2 vector file
+  mentions, does not exist and is not cited.
+
+What v1.0.0 says, and why:
+
+| Finding | Status | Basis |
+|---|---|---|
+| `a1.corrupt_frame_trusted` | `source_no_section` | `data/preambles/README.md` premise 3: ICAO Annex 10 Vol IV, "section not cited" |
+| `a2.position_without_basis` | `source_no_section` | `data/preambles/README.md` premise 4: ICAO Annex 10 Vol III. The README quotes §2.6.7 for the 10 s limit, which covers only the `stale_pair` case. Nothing in the repo ties §2.6.7 to `same_format` or `single_frame`. |
+| `V01`–`V16` | `taxonomy` | Each vector's `owasp` tag in `data/acars/d2_vectors_v0.1.0.json`. **The tags are unverified** (`bench/acars/README.md`). OWASP is not an aviation standard. |
+| `a1.identity_overtrusted`, `a1.source_misattributed`, `a2.position_overtrusted` | not in catalogue | Judge-only (6.7). The repo has no source for them yet. |
+
+7.12 (#97, standards traceability) has no defined format yet. The catalogue is keyed by
+finding ID so that 7.12 can extend it rather than start a second one.
+
+## Tests
+
+`tests/test_compliance_summary.py` checks the issue's demo:
+
+1. Generate the summary from a finished run, and show each safety finding with the source
+   it was graded against next to the 6.3 refusal and injection-compliance rates.
+2. Include a finding with no citation, and show generation failing with that finding named.
+
+What the tests check:
+
+- **Positive case.** Every graded finding is listed with its catalogue citation. The rates
+  are exactly the 6.3 `aggregate()` rates. The header counts findings per citation status.
+- **Negative case.** A graded finding with no catalogue entry raises `UncitedFindingError`
+  naming the finding. Nothing is written, and the CLI exits 2.
+- **Exclusions.** Judge-pending findings need no citation. Controls and unlabeled tasks
+  are not findings.
+- **Catalogue.** The shipped catalogue is checked against these rules, and invalid
+  catalogues are rejected.
+
+The fixtures are EvalLogs built in code with fake model names and synthetic text (CLAUDE.md
+rule 1). One end-to-end test runs a real Inspect eval on `mockllm/model`.
+
+## Versions (CLAUDE.md rules 3 and 4)
+
+- `SUMMARY_VERSION`: bump on any change to finding extraction, the graded and pending
+  rules, the citation checks or the output schema.
+- Catalogue version and sha256: recorded in every summary.
+- The 6.3 versions (`telemetry_version`, `refusal_classifier_version`) and per-log
+  provenance (log sha256, run and eval IDs, task version, corpus version and hash, scorer
+  versions, guardrail) are carried under `safety_telemetry`.
+
+Safety and capability are never combined. No capability score is read, and the summary has
+no composite, overall or combined field (rule 2).
+
