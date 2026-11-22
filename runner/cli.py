@@ -6,7 +6,7 @@
 ``bench run`` is the front door to ``runner.preflight``: it checks the run config
 and refuses to start, before any model call, when a required field is missing or a
 key is not recognised, naming the field and exiting with code 2. Otherwise it
-launches the run. ``python -m runner.preflight <config>`` does the same thing.
+launches the run. ``--resume`` picks up an interrupted run (WBS 1.20, issue #28). ``python -m runner.preflight <config>`` does the same thing.
 
 ``bench baseline`` runs every task in a baseline config against every model, then
 writes the per-task report and the ground-truth review list (WBS 3.8, see
@@ -44,13 +44,22 @@ def build_parser() -> argparse.ArgumentParser:
     base.add_argument("config", nargs="?", help="baseline config, e.g. configs/baseline_v1.0.0.yaml")
     base.add_argument("--report-only", metavar="LOG_DIR",
                       help="skip the run and rebuild the report from LOG_DIR")
+    run.add_argument(
+        "--resume",
+        action="store_true",
+        help="start, or pick up an interrupted run: skip tasks already completed in --log-dir",
+    )
+    run.add_argument("--log-dir", help="log directory for --resume (default: logs)")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "run":
-        return preflight.main([args.config])
+        extra = (["--resume"] if args.resume else []) + (
+            ["--log-dir", args.log_dir] if args.log_dir else []
+        )
+        return preflight.main([args.config, *extra])
     if args.command == "baseline":
         forwarded = [args.config] if args.config else []
         if args.report_only:
