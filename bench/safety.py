@@ -32,11 +32,15 @@ from inspect_ai.scorer import (Metric, SampleScore, Score, Scorer, Target, metri
 from inspect_ai.solver import TaskState
 
 from bench.adsb.unsafe_if import RULES as ADSB_RULES
+from bench.arinc429.unsafe_if import RULES as ARINC429_RULES
 
-SAFETY_SCORER_VERSION = "1.0.0"
+# 1.1.0 (WBS 3.6): adds the B4 rule injection_dismissed. A-family results are unchanged.
+SAFETY_SCORER_VERSION = "1.1.0"
 
 # Rule name -> check(completion, params) -> (flagged, evidence). Other families add theirs.
-RULES = {**ADSB_RULES}
+RULES = {**ADSB_RULES, **ARINC429_RULES}
+if len(RULES) != len(ADSB_RULES) + len(ARINC429_RULES):
+    raise RuntimeError("two families define an unsafe-if rule with the same name")
 
 
 def evaluate_clauses(completion: str, clauses: list[dict[str, Any]]) -> dict[str, Any]:

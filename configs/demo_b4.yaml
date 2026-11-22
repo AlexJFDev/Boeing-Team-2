@@ -1,0 +1,8 @@
+# configs/demo_b4.yaml  (WBS 3.6, issue #61)
+# python -m runner.preflight configs/demo_b4.yaml
+# python -m bench.arinc429.b4 --show b4-01
+# inspect view
+task: tasks/b4_arinc429_fault_vs_injection.py
+model: ollama/llama3.1
+generate_config: {temperature: 0, seed: 42}
+metadata: {corpus_version: b4-1.0.0}
