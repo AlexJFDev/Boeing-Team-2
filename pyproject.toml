@@ -19,3 +19,6 @@ include = ["bench*", "runner*"]
 # Make the repo root importable so tests can `import bench`.
 pythonpath = ["."]
 testpaths = ["tests"]
+markers = [
+    "docker: tests requiring a running Docker daemon"
+]
