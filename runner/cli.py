@@ -5,7 +5,7 @@
 ``bench run`` is the front door to ``runner.preflight``: it checks the run config
 and refuses to start, before any model call, when a required field is missing or a
 key is not recognised, naming the field and exiting with code 2. Otherwise it
-launches the run. ``python -m runner.preflight <config>`` does the same thing.
+launches the run. ``--resume`` picks up an interrupted run (WBS 1.20, issue #28). ``python -m runner.preflight <config>`` does the same thing.
 
 Exit codes: 0 the run succeeded, 1 the run failed, 2 the config was refused or the
 command line was wrong.
@@ -30,13 +30,22 @@ def build_parser() -> argparse.ArgumentParser:
         "then run it.",
     )
     run.add_argument("config", help="path to the YAML run config, e.g. configs/run.yaml")
+    run.add_argument(
+        "--resume",
+        action="store_true",
+        help="start, or pick up an interrupted run: skip tasks already completed in --log-dir",
+    )
+    run.add_argument("--log-dir", help="log directory for --resume (default: logs)")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "run":
-        return preflight.main([args.config])
+        extra = (["--resume"] if args.resume else []) + (
+            ["--log-dir", args.log_dir] if args.log_dir else []
+        )
+        return preflight.main([args.config, *extra])
     raise AssertionError(f"unhandled command: {args.command}")  # argparse requires one
 
 
