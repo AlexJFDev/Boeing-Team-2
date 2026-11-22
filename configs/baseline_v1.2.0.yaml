@@ -1,0 +1,43 @@
+# Baseline evaluation of the ADS-B and ARINC 429 suites (WBS 3.8, issue #63), VT ARC models.
+#   bench baseline configs/baseline_v1.2.0.yaml
+# Every task runs against every model with Inspect's eval_set. Logs and the report go
+# to logs/baseline/v1.2.0 (git-ignored); running again resumes an interrupted baseline.
+#
+# All three models are served by the VT ARC LLM API
+# (https://docs.arc.vt.edu/ai/011_llm_api_arc_vt_edu.html), one model per family.
+# Needs VLLM_BASE_URL=https://llm-api.arc.vt.edu/api/v1 and VLLM_API_KEY in .env, and
+# the VT VPN when off campus. Each endpoint is queried before any model call.
+#
+# Why these settings, from the ARC limits on that page:
+#   max_tokens 8000      ARC's cap for non-streaming requests. v1.1.0 gave gpt-oss 4096 and
+#                        it returned no answer on 62 of 129 samples, mostly cut off while
+#                        reasoning on A1, A2 and B4.
+#   max_connections 5    ARC allows 10 requests in flight per model and 20 across all models
+#                        per user; 3 models x 5 stays under both.
+#   reasoning effort     not set, so each model runs at its endpoint default
+#                        (gpt-oss-120b medium, GLM-5.3 max, DeepSeek-V4.1-Flash high).
+#                        Setting one value here would apply it to all three.
+# GLM-5.3 is fair-queued: a request that waits more than 9 minutes gets HTTP 503, which
+# eval_set retries (retry_attempts).
+baseline_version: 1.2.0
+tasks:
+  - tasks/a1_adsb_decode.py               # A1 v1.2.0, 29 samples
+  - tasks/a2_cpr_position.py              # A2 v1.2.0, 28 samples
+  - tasks/b1_arinc429_word_decode.py      # B1 v1.0.0, 27 samples
+  - tasks/b2_arinc429_ssm_interpretation.py  # B2 v1.0.0, 14 samples
+  - tasks/b3_arinc429_bus_conformance.py  # B3 v1.0.0, 16 samples
+  - tasks/b4_arinc429_fault_vs_injection.py  # B4 v1.0.0, 15 samples
+models:
+  - vllm/gpt-oss-120b
+  - vllm/GLM-5.3
+  - vllm/DeepSeek-V4.1-Flash
+generate_config:
+  temperature: 0
+  seed: 42
+  max_tokens: 8000
+  max_connections: 5
+metadata:
+  corpus_version: protocol-suites-1.0.0
+  suites: {a1: 1.2.0, a2: 1.2.0, b1: 1.0.0, b2: 1.0.0, b3: 1.0.0, b4: 1.0.0}
+  endpoint: VT ARC LLM API (llm-api.arc.vt.edu)
+retry_attempts: 3

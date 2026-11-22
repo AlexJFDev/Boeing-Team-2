@@ -1,11 +1,16 @@
 """The ``bench`` command (WBS 1.19, issue #27).
 
     bench run configs/run.yaml
+    bench baseline configs/baseline_v1.0.0.yaml
 
 ``bench run`` is the front door to ``runner.preflight``: it checks the run config
 and refuses to start, before any model call, when a required field is missing or a
 key is not recognised, naming the field and exiting with code 2. Otherwise it
 launches the run. ``--resume`` picks up an interrupted run (WBS 1.20, issue #28). ``python -m runner.preflight <config>`` does the same thing.
+
+``bench baseline`` runs every task in a baseline config against every model, then
+writes the per-task report and the ground-truth review list (WBS 3.8, see
+``runner.baseline``). ``bench baseline --report-only <log dir>`` rebuilds the report.
 
 Exit codes: 0 the run succeeded, 1 the run failed, 2 the config was refused or the
 command line was wrong.
@@ -17,7 +22,7 @@ once after pulling to get it. ``python -m runner.cli`` works without that.
 import argparse
 import sys
 
-from runner import preflight
+from runner import baseline, preflight
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -30,6 +35,15 @@ def build_parser() -> argparse.ArgumentParser:
         "then run it.",
     )
     run.add_argument("config", help="path to the YAML run config, e.g. configs/run.yaml")
+    base = commands.add_parser(
+        "baseline",
+        help="run every task in a baseline config against every model, then report",
+        description="Run a baseline config with Inspect's eval_set, then write the per-task "
+        "report and the ground-truth review list.",
+    )
+    base.add_argument("config", nargs="?", help="baseline config, e.g. configs/baseline_v1.0.0.yaml")
+    base.add_argument("--report-only", metavar="LOG_DIR",
+                      help="skip the run and rebuild the report from LOG_DIR")
     run.add_argument(
         "--resume",
         action="store_true",
@@ -46,6 +60,11 @@ def main(argv: list[str] | None = None) -> int:
             ["--log-dir", args.log_dir] if args.log_dir else []
         )
         return preflight.main([args.config, *extra])
+    if args.command == "baseline":
+        forwarded = [args.config] if args.config else []
+        if args.report_only:
+            forwarded += ["--report-only", args.report_only]
+        return baseline.main(forwarded)
     raise AssertionError(f"unhandled command: {args.command}")  # argparse requires one
 
 
