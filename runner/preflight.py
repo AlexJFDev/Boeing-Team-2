@@ -121,7 +121,7 @@ def check_task_accepts_profile(cfg: dict[str, Any]) -> None:
             "name a task file (path/to/file.py or path/to/file.py@task_name)"
         )
     try:
-        tasks = [t for t in list_tasks(Path(path)) if not name or t.name == name]
+        tasks = [t for t in list_tasks(str(path)) if not name or t.name == name]
     except Exception as e:
         raise PreflightError(f"cannot load task {spec!r} to check its parameters: {e}") from e
     if not tasks:
