@@ -45,7 +45,6 @@ Command line (exit status 1 if anything fails, 0 if all pass):
 
     python -m bench.boundary                 # scans data/ and prompts/
     python -m bench.boundary data/tasks      # or any files and directories
-    python -m bench.boundary --annotations   # also print GitHub annotations (CI, WBS 1.28)
 """
 
 from __future__ import annotations
@@ -133,18 +132,6 @@ class Report:
             return f"PASS: data boundary check ({counts})"
         return (f"FAIL: {len(self.violations)} problem(s) in {len(self.failed_files())} file(s) "
                 f"({counts})")
-
-
-def github_annotation(path: str, line: int | None, code: str, message: str, title: str) -> str:
-    """A GitHub Actions ``::error`` command, so the problem shows on the PR's changed line.
-
-    Used with ``--annotations`` here and in bench/validate.py (WBS 1.28).
-    """
-    def esc(text: str, props: bool = False) -> str:
-        text = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
-        return text.replace(":", "%3A").replace(",", "%2C") if props else text
-    where = f"file={esc(path, True)}" + (f",line={line}" if line else "")
-    return f"::error {where},title={esc(title, True)}::[{code}] {esc(message)}"
 
 
 # ---------------------------------------------------------------------------
@@ -270,8 +257,6 @@ def check_paths(paths: Iterable[str | Path] | None = None) -> Report:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m bench.boundary", description=__doc__.splitlines()[0])
     parser.add_argument("paths", nargs="*", help="files or directories (default: data/ and prompts/)")
-    parser.add_argument("--annotations", action="store_true",
-                        help="also print each problem as a GitHub Actions error annotation")
     args = parser.parse_args(argv)
     try:
         report = check_paths(args.paths)
@@ -280,8 +265,6 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     for v in report.violations:
         print(v)
-        if args.annotations:
-            print(github_annotation(v.path, v.line, v.code, v.message, "Data boundary"))
     print(report.summary())
     return 0 if report.passed else 1
 
