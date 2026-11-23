@@ -35,7 +35,12 @@ Command line (exit status 1 if anything differs from the baseline):
     python -m bench.regression show       # print the recorded baseline scores
     python -m bench.regression check      # run the regression set and compare
     python -m bench.regression check --log logs/<file>.eval    # compare an existing run
+    python -m bench.regression check --markdown report.md     # also write a Markdown report
     python -m bench.regression record 1.0.1                    # save a new baseline version
+
+CI runs ``check --markdown`` on every pull request (WBS 1.26,
+.github/workflows/regression.yml) and posts the report on the PR. The report is
+written on a pass, a failure and an error alike, so the PR always says what happened.
 
 The same task runs under Inspect directly:
 
@@ -49,7 +54,7 @@ import json
 import sys
 import tempfile
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
@@ -326,6 +331,7 @@ class CheckResult:
     setup_problems: list[str]
     differences: list[Difference]
     compared: int
+    summary: dict[str, dict[str, dict[str, float]]] = field(default_factory=dict)  # this run's means
 
     @property
     def passed(self) -> bool:
@@ -339,7 +345,100 @@ def check(log: EvalLog | None = None, baseline: dict[str, Any] | None = None) ->
     current = scores_from_log(log)
     compared = sum(len(v) for v in current.values())
     return CheckResult(setup_differences(baseline, current_setup()),
-                       score_differences(baseline["cases"], current), compared)
+                       score_differences(baseline["cases"], current), compared, summarize(current))
+
+
+# ---------------------------------------------------------------------------
+# Markdown report (WBS 1.26: posted on every pull request by the CI workflow)
+# ---------------------------------------------------------------------------
+
+REPORT_MARKER = "<!-- bench-regression-report -->"  # lets CI find and update its own PR comment
+MAX_LISTED = 50  # differences listed in full; the rest are counted
+
+
+def _md_cell(text: str) -> str:
+    return text.replace("|", "\\|")
+
+
+def _means_table(baseline_summary: dict[str, dict[str, dict[str, float]]],
+                 current_summary: dict[str, dict[str, dict[str, float]]]) -> list[str]:
+    names = sorted(set(baseline_summary) | set(current_summary))
+    head = ["response kind"]
+    for n in names:
+        short = SHORT_NAMES.get(n, n)
+        head += [f"{short} baseline", f"{short} now"]
+    lines = ["| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
+    for kind in RESPONSE_KINDS:
+        row = [kind]
+        for n in names:
+            for side in (baseline_summary, current_summary):
+                mean = side.get(n, {}).get(kind, {}).get("mean")
+                row.append("-" if mean is None else f"{mean:.3f}")
+        if any(cell != "-" for cell in row[1:]):
+            lines.append("| " + " | ".join(row) + " |")
+    return lines
+
+
+def markdown_report(result: CheckResult | None = None, baseline: dict[str, Any] | None = None,
+                    error: str | None = None) -> str:
+    """The regression result as Markdown, for the CI job summary and the PR comment.
+
+    Pass ``result`` and ``baseline`` after a comparison, or ``error`` when the check
+    could not run (a missing or edited baseline, a failed run).
+    """
+    lines = [REPORT_MARKER]
+    if error is not None or result is None:
+        lines += ["## Regression check: ERROR", "",
+                  f"The regression set could not be compared with baseline {BASELINE_VERSION}:", "",
+                  "```", error or "no result", "```"]
+        return "\n".join(lines) + "\n"
+
+    verdict = "PASS" if result.passed else "FAIL"
+    lines += [f"## Regression check: {verdict}", ""]
+    if result.passed:
+        lines.append(f"All {result.compared} scores match baseline {BASELINE_VERSION} "
+                     f"(regression set {REGRESSION_VERSION}).")
+    else:
+        lines.append(f"{len(result.differences)} score(s) and {len(result.setup_problems)} setup "
+                     f"item(s) differ from baseline {BASELINE_VERSION} "
+                     f"({result.compared} scores compared).")
+    lines += ["", "The check is exact: a score that differs from the baseline in either direction "
+              "fails. An intended scoring change needs a new baseline version, recorded with "
+              "`python -m bench.regression record <version>`."]
+
+    if result.setup_problems:
+        lines += ["", "### Setup changed", ""]
+        lines += [f"- {_md_cell(p)}" for p in result.setup_problems]
+
+    if result.differences:
+        lower = sum(1 for d in result.differences
+                    if d.baseline is not None and d.current is not None and d.current < d.baseline)
+        lines += ["", f"### Changed scores ({lower} lower than the baseline)", "",
+                  "| case | scorer | baseline | now | change |", "|---|---|---|---|---|"]
+        for d in result.differences[:MAX_LISTED]:
+            old = "-" if d.baseline is None else f"{d.baseline:g}"
+            new = "-" if d.current is None else f"{d.current:g}"
+            if d.baseline is None:
+                change = "not in baseline"
+            elif d.current is None:
+                change = "missing"
+            else:
+                change = "LOWER" if d.current < d.baseline else "HIGHER"
+            lines.append(f"| `{_md_cell(d.case)}` | {SHORT_NAMES.get(d.scorer, d.scorer)} "
+                         f"| {old} | {new} | {change} |")
+        if len(result.differences) > MAX_LISTED:
+            lines += ["", f"...and {len(result.differences) - MAX_LISTED} more. "
+                      "The full list is in the job log."]
+
+    if baseline is not None:
+        lines += ["", "### Mean score per response kind", ""]
+        lines += _means_table(baseline.get("summary", {}), result.summary)
+    return "\n".join(lines) + "\n"
+
+
+def write_report(path: str | Path, text: str) -> None:
+    with Path(path).open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(text)
 
 
 # ---------------------------------------------------------------------------
@@ -382,6 +481,8 @@ def main(argv: list[str] | None = None) -> int:
     p_check = sub.add_parser("check", help="run the regression set and compare with the baseline")
     p_check.add_argument("--log", help="compare this .eval log instead of running")
     p_check.add_argument("--log-dir", help="keep the run's .eval log here")
+    p_check.add_argument("--markdown", metavar="PATH",
+                         help="also write the result as a Markdown report (used by CI)")
     p_record = sub.add_parser("record", help="run the regression set and save a NEW baseline version")
     p_record.add_argument("version", help="baseline version, e.g. 1.0.1")
     args = parser.parse_args(argv)
@@ -401,11 +502,17 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"note: check still compares against {BASELINE_VERSION}; "
                       f"set BASELINE_VERSION to {args.version} to switch")
             return 0
+        baseline = load_baseline()
         log = read_eval_log(args.log) if args.log else run_regression(args.log_dir)
-        result = check(log)
+        result = check(log, baseline)
     except (RegressionError, CorpusError) as exc:
         print(f"error: {exc}", file=sys.stderr)
+        if getattr(args, "markdown", None):
+            write_report(args.markdown, markdown_report(error=str(exc)))
         return 2
+
+    if args.markdown:
+        write_report(args.markdown, markdown_report(result, baseline))
 
     for problem in result.setup_problems:
         print(f"SETUP CHANGED: {problem}")
