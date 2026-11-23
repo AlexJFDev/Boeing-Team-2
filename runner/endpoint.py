@@ -1,4 +1,5 @@
-"""Record what an OpenAI-compatible endpoint says about a ``vllm/...`` model.
+"""Record what an OpenAI-compatible endpoint says about a ``vllm/...`` or
+``openai-api/<service>/...`` model.
 
 A hosted endpoint exposes no weights digest, so the best available identity is
 whatever ``GET /models`` lists for the model. The standard fields are always
@@ -23,17 +24,12 @@ def _dig(entry: dict, path: str):
     return entry
 
 
-def vllm_model_metadata(model: str, extra_fields: tuple[str, ...] = ()) -> dict | None:
-    """EvalLog metadata for a ``vllm/...`` model, or None for any other model."""
-    if not model.startswith("vllm/"):
-        return None
-    name = model.removeprefix("vllm/")
-    base_url = os.environ.get("VLLM_BASE_URL")
-    if not base_url:
-        raise EndpointError("VLLM_BASE_URL is not set")
+def _listed_model(base_url: str, api_key: str, name: str,
+                  extra_fields: tuple[str, ...] = ()) -> dict:
+    """The fields ``GET {base_url}/models`` lists for ``name``; EndpointError if it can't."""
     request = urllib.request.Request(
         f"{base_url.rstrip('/')}/models",
-        headers={"Authorization": f"Bearer {os.environ.get('VLLM_API_KEY', '')}"},
+        headers={"Authorization": f"Bearer {api_key}"},
     )
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
@@ -48,7 +44,42 @@ def vllm_model_metadata(model: str, extra_fields: tuple[str, ...] = ()) -> dict 
     for path in (*STANDARD_FIELDS, *extra_fields):
         if (value := _dig(entry, path)) is not None:
             fields[path] = value
-    return {"endpoint_model": fields}
+    return fields
+
+
+def vllm_model_metadata(model: str, extra_fields: tuple[str, ...] = ()) -> dict | None:
+    """EvalLog metadata for a ``vllm/...`` model, or None for any other model."""
+    if not model.startswith("vllm/"):
+        return None
+    base_url = os.environ.get("VLLM_BASE_URL")
+    if not base_url:
+        raise EndpointError("VLLM_BASE_URL is not set")
+    name = model.removeprefix("vllm/")
+    return {"endpoint_model": _listed_model(base_url, os.environ.get("VLLM_API_KEY", ""), name,
+                                            extra_fields)}
+
+
+def openai_api_model_metadata(model: str, extra_fields: tuple[str, ...] = ()) -> dict | None:
+    """EvalLog metadata for an ``openai-api/<service>/<model>`` model, or None for any other.
+
+    Inspect's OpenAI-compatible provider reads ``<SERVICE>_BASE_URL`` and
+    ``<SERVICE>_API_KEY`` (service upper-cased, hyphens as underscores), so
+    ``openai-api/arc/gpt-oss-120b`` uses ``ARC_BASE_URL`` and ``ARC_API_KEY``. This
+    checks the same endpoint. Unlike Inspect's ``vllm/`` provider, this one can
+    stream, which is what lifts a hosted endpoint's non-streaming output cap.
+    """
+    if not model.startswith("openai-api/"):
+        return None
+    parts = model.removeprefix("openai-api/").split("/", 1)
+    if len(parts) != 2 or not all(parts):
+        raise EndpointError(f"'{model}' must be openai-api/<service>/<model>")
+    service, name = parts
+    env = service.upper().replace("-", "_")
+    base_url = os.environ.get(f"{env}_BASE_URL")
+    if not base_url:
+        raise EndpointError(f"{env}_BASE_URL is not set")
+    fields = _listed_model(base_url, os.environ.get(f"{env}_API_KEY", ""), name, extra_fields)
+    return {"endpoint_model": {"service": service, **fields}}
 
 
 OLLAMA_DEFAULT_URL = "http://localhost:11434"

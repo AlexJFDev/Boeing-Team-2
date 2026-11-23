@@ -70,7 +70,7 @@ than guessing.
 
 Rendered from `LABEL_PROFILES` by `bench.arinc429.b1.render_preamble`, and
 `tests/test_b1_tasks.py` checks the file still matches. A profile change therefore
-needs a new preamble version. Shared by the B family: B1 and B2 use it, and B3 and B4 can too.
+needs a new preamble version. Shared by the B family: B1, B2, B3 and B4 use it. B3's timing rules (bus speed, gap, word timing, label rates) and B4's transmitter and change limits are per-task premises, not part of this file.
 
 | Premise | Source | Confidence |
 | --- | --- | --- |

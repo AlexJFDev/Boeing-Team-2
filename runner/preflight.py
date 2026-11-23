@@ -19,11 +19,21 @@ profile (see ``runner.guardrails``). An unknown or edited profile is refused bef
 any model call. The profile is passed to the task as the ``guardrail_profile`` and
 ``guardrail_version`` task parameters, so the task must accept them; it is recorded in
 the log under ``guardrail_profile_*``. Without the key the log records ``none``.
+
+The optional ``time_limit`` key (whole seconds, per sample) is Inspect's own
+``time_limit``: a sample that exceeds it is stopped and recorded, the run carries on,
+and the task is reported ``timed-out`` (see ``runner.resume``). The value is recorded in
+the log as ``time_limit_seconds``.
+
+``--resume`` runs the config with ``inspect_ai.eval_set`` into ``--log-dir`` (default
+``$INSPECT_LOG_DIR`` or ``logs``), so a relaunch after an interruption skips tasks that
+already finished and writes no second log for them.
 """
 
 import argparse
 import importlib.util
 import inspect
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -31,13 +41,22 @@ from typing import Any
 import yaml
 from dotenv import load_dotenv
 from inspect_ai import eval as inspect_eval
-from inspect_ai import list_tasks
+from inspect_ai import eval_set, list_tasks
 from inspect_ai.model import GenerateConfig
 
 from runner.endpoint import EndpointError, vllm_model_metadata
 from runner.guardrails import NONE, GuardrailProfile, GuardrailProfileError, load_guardrail_profile
+from runner.resume import format_summary, prune_superseded, summarize, task_status
 
-ALLOWED = ("task", "model", "generate_config", "metadata", "model_info_fields", "guardrail_profile")
+ALLOWED = (
+    "task",
+    "model",
+    "generate_config",
+    "metadata",
+    "model_info_fields",
+    "guardrail_profile",
+    "time_limit",
+)
 REQUIRED = (
     "task",
     "model",
@@ -73,6 +92,11 @@ def load_and_check(path: str | Path) -> dict[str, Any]:
     ]
     if unknown:
         raise PreflightError(f"run config has unknown field(s): {', '.join(unknown)}")
+    time_limit = cfg.get("time_limit")
+    if time_limit is not None and (
+        isinstance(time_limit, bool) or not isinstance(time_limit, int) or time_limit < 1
+    ):
+        raise PreflightError("time_limit must be a whole number of seconds, at least 1")
     guardrail_profile(cfg)  # refuse a bad or edited profile now, before any model call
     check_task_accepts_profile(cfg)
     return cfg
@@ -142,7 +166,8 @@ def run_metadata(cfg: dict[str, Any]) -> dict[str, Any]:
     """Metadata for the EvalLog: the config's own, the guardrail profile's, and the
     endpoint's for vllm models."""
     endpoint = vllm_model_metadata(cfg["model"], tuple(cfg.get("model_info_fields", ())))
-    return {**cfg["metadata"], **guardrail_profile(cfg).metadata(), **(endpoint or {})}
+    limit = {"time_limit_seconds": cfg["time_limit"]} if cfg.get("time_limit") else {}
+    return {**cfg["metadata"], **guardrail_profile(cfg).metadata(), **limit, **(endpoint or {})}
 
 
 def task_args(cfg: dict[str, Any]) -> dict[str, Any]:
@@ -156,7 +181,19 @@ def task_args(cfg: dict[str, Any]) -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("config")
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="start, or pick up an interrupted run: skip tasks already completed in --log-dir",
+    )
+    parser.add_argument(
+        "--log-dir",
+        help="log directory for --resume (default: $INSPECT_LOG_DIR or logs); "
+        "it must hold only this run's logs",
+    )
     args = parser.parse_args(argv)
+    if args.log_dir and not args.resume:
+        parser.error("--log-dir is only used with --resume")
 
     load_dotenv()
     try:
@@ -166,13 +203,25 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {e}", file=sys.stderr)
         return 2
 
-    logs = inspect_eval(
-        cfg["task"],
+    kwargs: dict[str, Any] = dict(
         model=cfg["model"],
         metadata=metadata,
         task_args=task_args(cfg),
+        time_limit=cfg.get("time_limit"),
         **cfg["generate_config"],
     )
+    if args.resume:
+        log_dir = args.log_dir or os.environ.get("INSPECT_LOG_DIR") or "logs"
+        # retry_attempts=0: relaunching is the retry, so a failing task is not looped on
+        # inside one launch. Inspect still skips every task whose log is `success`.
+        ok, _ = eval_set(cfg["task"], log_dir=log_dir, retry_attempts=0, **kwargs)
+        for name in prune_superseded(log_dir):
+            print(f"removed superseded partial log {name}", file=sys.stderr)
+        print(format_summary(summarize(log_dir)))
+        return 0 if ok else 1
+
+    logs = inspect_eval(cfg["task"], **kwargs)
+    print(format_summary([task_status(log) for log in logs]))
     return 0 if all(log.status == "success" for log in logs) else 1
 
 
