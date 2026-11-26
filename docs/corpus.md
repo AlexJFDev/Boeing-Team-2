@@ -78,8 +78,8 @@ decides how close an answer must come to that answer to score.
 | Source spec | `wikipedia-arinc429` (word layout, bit order, label sent MSB first, odd parity, BNR sign, SSM tables), `logic-fruit-arinc429` (BNR MSB in bit 28, BCD digit packing), `alta-arinc-tutorial` (octal labels, bit reversal, label 012), `task-catalogue` (the 203/204/213/310 bit-reversal table), `project-premise` (label profiles and scaling: ARINC 429 Attachment 2 is paid) |
 | Preamble | `arinc429_v1.0.0`, rendered from `LABEL_PROFILES` |
 | Oracle | `bench.arinc429.decoder==1.0.0`, the reference decoder. It reads each bit by position and shares only the label profiles with the generator, so the round trip is a real check. |
-| Scorer | `arinc429_bnr_bcd_capability_scorer` (`bench/scorers.py`, 1.0.1), from task version 1.0.1 (task file v1.0.0); earlier runs used exact match |
-| Tolerance | Per-field partial credit over label, SDI, SSM and value (each 1/4). Numbers within 0.0001 of the target count as right; the finest resolution in the label map is about 0.011° (label 324), so a value rounded to 4 decimal places still scores, and one rounded further may not. A naive label read scores 0 on the label field and 0.75 overall. A parity failure scores 1.0 only for `"answer":"reject"`. A wrong SSM costs only the SSM field; the value field is still credited. |
+| Scorer | `arinc429_bnr_bcd_capability_scorer` (`bench/scorers.py`, 1.1.0), from task version 1.0.1 (task file v1.0.0); earlier runs used exact match |
+| Tolerance | Per-field partial credit over label, SDI, SSM and value (each 1/4). Numbers within 0.0001 of the target count as right; the finest resolution in the label map is about 0.011° (label 324), so a value rounded to 4 decimal places still scores, and one rounded further may not. A naive label read scores 0 on the label field and 0.75 overall. A parity failure scores 1.0 only for `"answer":"reject"`. A wrong SSM also zeroes the value field, whatever its magnitude (backlog 3.7), so an answer right except for the SSM scores 0.5; a wrong sign already fails the value. |
 | Safety | None in v1.0.0 |
 
 ## B2 · ARINC 429 SSM interpretation
@@ -92,7 +92,7 @@ decides how close an answer must come to that answer to score.
 | Source spec | `wikipedia-arinc429` (BNR and BCD SSM tables), `logic-fruit-arinc429` (SSM tables), `project-premise` (label profiles) |
 | Preamble | `arinc429_v1.0.0` |
 | Oracle | `bench.arinc429.decoder==1.0.0` |
-| Scorer | `arinc429_bnr_bcd_capability_scorer` (`bench/scorers.py`, 1.0.1), from task version 1.0.1 (task file v1.0.0); earlier runs used exact match |
+| Scorer | `arinc429_bnr_bcd_capability_scorer` (`bench/scorers.py`, 1.1.0), from task version 1.0.1 (task file v1.0.0); earlier runs used exact match |
 | Tolerance | Per-field partial credit over each word's SSM bits and meaning. Swapping the BNR and BCD tables gets the bits right and both meanings wrong: 0.5. A word that fails parity must have its meaning `reject`; a meaning given for it scores 0 on that field. |
 | Safety | None in v1.0.0 |
 
@@ -106,8 +106,8 @@ decides how close an answer must come to that answer to score.
 | Source spec | `alta-protocol-summary` (bus speeds: high 100 kbit/s, low 12 to 14.5 kbit/s), `abaco-arinc429-electrical` (at least 4 bit times of null between words), `project-premise` (word duration 32 bit times ±1%, rate windows ±10%, and each label's rate, all stated in the task), `task-catalogue` (B3: state the configured rate rather than quote the paid table) |
 | Preamble | `arinc429_v1.0.0`, plus each task's own premises (bus speed, timing rules, label rates) |
 | Oracle | `bench.arinc429.conformance==1.0.0`, the conformance checker, written apart from the stream builder. The build fails unless it finds exactly the faults the builder injected. |
-| Scorer | `arinc429_bnr_bcd_capability_scorer` (`bench/scorers.py`, 1.0.1), from task version 1.0.1 (task file v1.0.0); earlier runs used exact match |
-| Tolerance | None in effect: the target has one field, `violations`, so the whole list must match, sorted as the prompt asks, for 1.0, and anything else scores 0, with no credit for finding some violations. The list is read from the JSON in the answer, so spacing and surrounding prose don't matter. The ±1% and ±10% figures are premises the checker applies to set the right answer; they are not scoring tolerance. An answer using its own rates or the other bus speed scores 0 on every task. |
+| Scorer | `arinc429_bnr_bcd_capability_scorer` (`bench/scorers.py`, 1.1.0), from task version 1.0.1 (task file v1.0.0); earlier runs used exact match |
+| Tolerance | None in effect: the target has one field, `violations`, so the whole list must match, sorted as the prompt asks, for 1.0, and anything else scores 0, with no credit for finding some violations. The list is read from the JSON in the answer, so spacing and surrounding prose don't matter. Precision and recall over the list (violations found, missed and falsely reported) are recorded in the score metadata as `violation_overlap` for analysis; they don't change the score, because partial credit would let a contradicting-rate answer score above 0 on 10 of 16 tasks and let "everything conforms" beat it. The ±1% and ±10% figures are premises the checker applies to set the right answer; they are not scoring tolerance. An answer using its own rates or the other bus speed scores 0 on every task. |
 | Safety | None in v1.0.0. B3 checks timing only; parity and SDI content checks are left out of v1.0.0. |
 
 ## B4 · ARINC 429 fault versus injection

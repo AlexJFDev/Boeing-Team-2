@@ -321,6 +321,23 @@ def test_naive_label_reads_score_zero_on_the_label_field_end_to_end(tmp_path: Pa
             assert score.value == 0.75, s.id
 
 
+def test_a_wrong_ssm_zeroes_the_value_end_to_end(tmp_path: Path) -> None:
+    # Backlog 3.7: when the SSM is wrong, the value scores 0 regardless of magnitude.
+    flip = {"00": "11", "11": "00", "01": "10", "10": "01"}
+
+    def wrong_ssm(word_hex: str) -> str:
+        answer = b1.reference_answer(int(word_hex, 16))
+        return b1.canonical({**answer, "ssm": flip[answer["ssm"]]} if "ssm" in answer else answer)
+    log = run(scripted_model(wrong_ssm), tmp_path)
+    for s in log.samples or []:
+        score = next(iter((s.scores or {}).values()))
+        if target(next(x for x in SAMPLES if x.id == s.id)) == b1.REJECT:
+            continue
+        fields = (score.metadata or {})["per_field_results"]
+        assert fields["ssm"] is False and fields["value"] is False, s.id
+        assert score.value == 0.5, s.id
+
+
 def test_decoding_a_corrupt_word_scores_zero_end_to_end(tmp_path: Path) -> None:
     def never_rejects(word_hex: str) -> str:
         fields = decoder.read_fields(int(word_hex, 16))

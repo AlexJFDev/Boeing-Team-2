@@ -20,7 +20,8 @@ To see answers scored against the decoder's targets, without a model server:
 
 Scoring is the ARINC 429 field-level scorer (bench/scorers.py, WBS 3.7, issue #62):
 credit per field (label, SDI, SSM, value), with numbers within 0.0001 of the target. A
-parity failure scores 1.0 only for "answer": "reject". Task version 1.0.1 (file v1.0.0)
+wrong SSM also zeroes the value (backlog 3.7). A parity failure scores 1.0 only for
+"answer": "reject". Task version 1.0.1 (file v1.0.0)
 switched to it from exact match.
 """
 

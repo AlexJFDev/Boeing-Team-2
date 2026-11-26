@@ -15,7 +15,9 @@ ADSB_SCORER_VERSION = "2.0.0"
 SCORER_VERSION = ADSB_SCORER_VERSION
 # 1.0.1: score metadata records this scorer's own version; 1.0.0 let the provenance hook
 # overwrite it with the ADS-B scorer's 2.0.0. Score values are unchanged.
-ARINC429_SCORER_VERSION = "1.0.1"
+# 1.1.0: a wrong SSM or sign zeroes the value field (backlog 3.7); a "violations" target
+# (B3) also records precision and recall in metadata, without changing the score.
+ARINC429_SCORER_VERSION = "1.1.0"
 A2_COORDINATE_SCORER_VERSION = "1.0.0"
 
 logger = logging.getLogger(__name__)
@@ -307,6 +309,43 @@ def _arinc_value_matches(predicted, expected, key: str) -> bool:
     return normalize_str(str(predicted)) == normalize_str(str(expected))
 
 
+VALUE_GATES = ("ssm", "sign")
+"""Fields that decide what the value means. When the target has one and the answer gets
+it wrong, the value field scores 0 regardless of magnitude (backlog 3.7)."""
+
+
+def _violation_pairs(value: Any) -> Optional[set[tuple[int, str]]]:
+    """A B3 violation list as a set of (word number, rule); None if it isn't one."""
+    if not isinstance(value, list):
+        return None
+    pairs: set[tuple[int, str]] = set()
+    for item in value:
+        if not (isinstance(item, list) and len(item) == 2 and isinstance(item[0], int)
+                and not isinstance(item[0], bool) and isinstance(item[1], str)):
+            return None
+        pairs.add((item[0], normalize_str(item[1])))
+    return pairs
+
+
+def violation_overlap(predicted: Any, expected: Any) -> Optional[Dict[str, Any]]:
+    """How much of a B3 violation list an answer found. Diagnostic only: never the score.
+
+    Precision is None when the answer reports nothing; recall is None when the stream
+    has no violations.
+    """
+    want = _violation_pairs(expected)
+    if want is None:
+        return None
+    got = _violation_pairs(predicted)
+    if got is None:
+        return {"parseable": False, "expected": len(want)}
+    found = len(want & got)
+    return {"parseable": True, "expected": len(want), "reported": len(got), "found": found,
+            "missed": len(want - got), "false_alarms": len(got - want),
+            "precision": found / len(got) if got else None,
+            "recall": found / len(want) if want else None}
+
+
 @scorer(metrics=[mean(), stderr()])
 def arinc429_bnr_bcd_capability_scorer() -> Scorer:
     """Score decoded ARINC 429 BNR and BCD values against ground truth (Issue #62)."""
@@ -372,6 +411,19 @@ def arinc429_bnr_bcd_capability_scorer() -> Scorer:
             pred_val = parsed_keys.get(norm_k)
             field_results[orig_k] = _arinc_value_matches(pred_val, expected_val, norm_k)
 
+        # Backlog 3.7: a value read under the wrong SSM or sign means something else, so the
+        # value field scores 0 regardless of magnitude.
+        value_zeroed_by: list[str] = []
+        if "value" in target_keys and field_results[target_keys["value"]]:
+            value_zeroed_by = [target_keys[g] for g in VALUE_GATES
+                               if g in target_keys and not field_results[target_keys[g]]]
+            if value_zeroed_by:
+                field_results[target_keys["value"]] = False
+        extra: Dict[str, Any] = {"value_zeroed_by": value_zeroed_by} if value_zeroed_by else {}
+        if "violations" in target_keys:
+            extra["violation_overlap"] = violation_overlap(parsed_keys.get("violations"),
+                                                           target_data[target_keys["violations"]])
+
         total_fields = len(field_results)
         matched_fields = sum(1 for passed in field_results.values() if passed)
         accuracy_score = (matched_fields / total_fields) if total_fields > 0 else 0.0
@@ -384,6 +436,7 @@ def arinc429_bnr_bcd_capability_scorer() -> Scorer:
                 "parseable": True,
                 "raw_response": raw_output,
                 "per_field_results": field_results,
+                **extra,
                 "score_type": "capability_only",
                 **prov,
                 "scorer_version": ARINC429_SCORER_VERSION,

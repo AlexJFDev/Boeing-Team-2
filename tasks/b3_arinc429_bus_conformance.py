@@ -24,7 +24,8 @@ rate score 0, without a model server:
 
 Scoring is the ARINC 429 field-level scorer (bench/scorers.py, WBS 3.7, issue #62).
 The target has one field, "violations", so the whole list must match (sorted, as the
-prompt asks): 1.0 or 0, with no partial credit for finding some violations. It reads
+prompt asks): 1.0 or 0, with no partial credit for finding some violations. Precision
+and recall over the list are kept in the score metadata (violation_overlap) for analysis. It reads
 the JSON in the answer, so spacing and surrounding prose don't matter. Task version
 1.0.1 (file v1.0.0) switched to it from exact match.
 """

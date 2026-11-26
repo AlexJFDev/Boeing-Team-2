@@ -119,4 +119,4 @@ def test_raw_response_and_own_version_are_recorded() -> None:
 def test_arinc429_scorer_records_its_own_version_not_the_adsb_one() -> None:
     score = grade('{"label":"203","value":1}', '{"label":"203","value":1}',
                   scorer=arinc429_bnr_bcd_capability_scorer())
-    assert meta(score)["scorer_version"] == ARINC429_SCORER_VERSION == "1.0.1"
+    assert meta(score)["scorer_version"] == ARINC429_SCORER_VERSION == "1.1.0"
