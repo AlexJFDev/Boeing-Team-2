@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from typing import Any, Dict, Optional
 
 from inspect_ai.scorer import Score, Scorer, Target, accuracy, mean, scorer, stderr
@@ -12,7 +13,10 @@ from inspect_ai.solver import TaskState
 EXACT_MATCH_VERSION = "1.0.0"
 ADSB_SCORER_VERSION = "2.0.0"
 SCORER_VERSION = ADSB_SCORER_VERSION
-ARINC429_SCORER_VERSION = "1.0.0"
+# 1.0.1: score metadata records this scorer's own version; 1.0.0 let the provenance hook
+# overwrite it with the ADS-B scorer's 2.0.0. Score values are unchanged.
+ARINC429_SCORER_VERSION = "1.0.1"
+A2_COORDINATE_SCORER_VERSION = "1.0.0"
 
 logger = logging.getLogger(__name__)
 
@@ -334,8 +338,8 @@ def arinc429_bnr_bcd_capability_scorer() -> Scorer:
                     "raw_response": raw_output,
                     "per_field_results": {},
                     "score_type": "capability_only",
-                    "scorer_version": ARINC429_SCORER_VERSION,
                     **prov,
+                    "scorer_version": ARINC429_SCORER_VERSION,
                 },
             )
 
@@ -353,8 +357,8 @@ def arinc429_bnr_bcd_capability_scorer() -> Scorer:
                     "raw_response": raw_output,
                     "per_field_results": {"answer": is_matched},
                     "score_type": "capability_only",
-                    "scorer_version": ARINC429_SCORER_VERSION,
                     **prov,
+                    "scorer_version": ARINC429_SCORER_VERSION,
                 },
             )
 
@@ -381,9 +385,92 @@ def arinc429_bnr_bcd_capability_scorer() -> Scorer:
                 "raw_response": raw_output,
                 "per_field_results": field_results,
                 "score_type": "capability_only",
-                "scorer_version": ARINC429_SCORER_VERSION,
                 **prov,
+                "scorer_version": ARINC429_SCORER_VERSION,
             },
+        )
+
+    return score
+
+
+# ---------------------------------------------------------------------------
+# A2 CPR Coordinate Scorer (numeric tolerance; mentor review item, data review)
+# ---------------------------------------------------------------------------
+
+A2_TOLERANCE_DEG = 0.0001
+"""Largest error, in degrees of latitude and of longitude separately, that still scores 1.0.
+
+0.0001 deg is about 11 m of latitude. Measured on A2 v1.2.0: a correct decode is
+within 0.000005 deg of the target (it is rounded to 5 places), while giving the older
+frame's position instead of the newer one, the usual A2 mistake, is off by 0.00056 to
+0.005 deg. A 0.001 deg tolerance would give that mistake full credit on 3 of the 10
+global-pair tasks; 0.0001 deg rejects it on all of them and still covers CPR's ~5 m
+airborne resolution and an answer rounded to 4 places."""
+
+_LAT_KEYS = ("latitude", "lat")
+_LON_KEYS = ("longitude", "lon", "lng")
+
+
+def _coordinate(fields: Dict[str, Any], keys: tuple[str, ...]) -> Optional[float]:
+    for key in keys:
+        value = fields.get(key)
+        if isinstance(value, bool) or value is None:
+            continue
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return None
+        return number if math.isfinite(number) else None
+    return None
+
+
+@scorer(metrics=[mean(), stderr()])
+def a2_cpr_coordinate_scorer(tolerance_deg: float = A2_TOLERANCE_DEG) -> Scorer:
+    """A2 capability: the position within ``tolerance_deg``, or the exact no-decode answer.
+
+    Decodable tasks score 1.0 when both latitude and longitude are within the
+    tolerance of the target (longitude compared across the antimeridian), else 0.0;
+    there is no partial credit, because a position with one coordinate right is still
+    the wrong place. Cannot-be-determined tasks score 1.0 only for
+    ``{"answer":"cannot_be_determined"}``; a position there scores 0. The answer is
+    read from the JSON in the response, so formatting and surrounding prose don't
+    matter. The full response is kept for rescoring (CLAUDE.md rule 8).
+    """
+
+    async def score(state: TaskState, target: Target) -> Score:
+        raw_output = state.output.completion if state.output else ""
+        prov = extract_metric_provenance(state)
+        meta: Dict[str, Any] = {"raw_response": raw_output, "score_type": "capability_only",
+                                "tolerance_deg": tolerance_deg, **prov,
+                                "scorer_version": A2_COORDINATE_SCORER_VERSION}
+        expected = json.loads(target.text)
+        parsed = extract_adsb_json(raw_output)
+        if parsed is None:
+            return Score(value=0.0, answer=raw_output, explanation="Response unparseable into JSON.",
+                         metadata={**meta, "parseable": False})
+
+        if "answer" in expected:  # cannot_be_determined
+            got = parsed.get("answer")
+            ok = isinstance(got, str) and normalize_str(got) == normalize_str(str(expected["answer"]))
+            return Score(value=1.0 if ok else 0.0, answer=json.dumps(parsed),
+                         explanation=f"No-decode target: {'matched' if ok else 'not given'}",
+                         metadata={**meta, "parseable": True, "target_type": "no_decode"})
+
+        lat, lon = _coordinate(parsed, _LAT_KEYS), _coordinate(parsed, _LON_KEYS)
+        if lat is None or lon is None:
+            return Score(value=0.0, answer=json.dumps(parsed),
+                         explanation="No numeric latitude and longitude in the response.",
+                         metadata={**meta, "parseable": True, "target_type": "position"})
+        lat_err = abs(lat - float(expected["latitude"]))
+        lon_err = abs((lon - float(expected["longitude"]) + 180.0) % 360.0 - 180.0)
+        ok = lat_err <= tolerance_deg and lon_err <= tolerance_deg
+        return Score(
+            value=1.0 if ok else 0.0,
+            answer=json.dumps(parsed),
+            explanation=(f"{'Within' if ok else 'Outside'} {tolerance_deg} deg: "
+                         f"dLat={lat_err:.6f}, dLon={lon_err:.6f}"),
+            metadata={**meta, "parseable": True, "target_type": "position",
+                      "lat_error_deg": lat_err, "lon_error_deg": lon_err},
         )
 
     return score

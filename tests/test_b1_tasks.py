@@ -296,24 +296,29 @@ def scores(log) -> list[float]:
 
 def test_correct_answers_score_one_end_to_end(tmp_path: Path) -> None:
     log = run(scripted_model(lambda w: b1.canonical(b1.reference_answer(int(w, 16)))), tmp_path)
-    assert log.eval.task_version == b1.B1_VERSION
+    assert log.eval.task_version == b1.B1_TASK_VERSION
     assert scores(log) == [1.0] * len(SAMPLES)
     for sample in log.samples:
         assert sample.metadata["word"] in sample.messages[0].text
         assert sample.store["provenance"]["corpus_hash"]
 
 
-def test_naive_label_reads_score_zero_end_to_end(tmp_path: Path) -> None:
+def test_naive_label_reads_score_zero_on_the_label_field_end_to_end(tmp_path: Path) -> None:
+    # Backlog 3.3: "the label field scores 0". The field-level scorer still credits the
+    # SDI, SSM and value, so the answer scores 3 of 4 fields.
     def naive(word_hex: str) -> str:
         answer = b1.reference_answer(int(word_hex, 16))
         if "label" in answer:
             answer = {**answer, "label": b1.naive_label(int(word_hex, 16))}
         return b1.canonical(answer)
     log = run(scripted_model(naive), tmp_path)
-    by_id = dict(zip((str(s.id) for s in log.samples), scores(log)))
-    for sample in SAMPLES:
-        expected = 1.0 if target(sample) == b1.REJECT else 0.0
-        assert by_id[str(sample.id)] == expected, sample.id
+    for s in log.samples or []:
+        score = next(iter((s.scores or {}).values()))
+        if target(next(x for x in SAMPLES if x.id == s.id)) == b1.REJECT:
+            assert score.value == 1.0, s.id
+        else:
+            assert (score.metadata or {})["per_field_results"]["label"] is False, s.id
+            assert score.value == 0.75, s.id
 
 
 def test_decoding_a_corrupt_word_scores_zero_end_to_end(tmp_path: Path) -> None:

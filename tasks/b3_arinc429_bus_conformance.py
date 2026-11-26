@@ -22,18 +22,22 @@ rate score 0, without a model server:
 
     python scripts/arinc429/demo_b3_scoring.py
 
-Scoring is the exact-match scorer on canonical JSON, as for B1 and B2.
+Scoring is the ARINC 429 field-level scorer (bench/scorers.py, WBS 3.7, issue #62).
+The target has one field, "violations", so the whole list must match (sorted, as the
+prompt asks): 1.0 or 0, with no partial credit for finding some violations. It reads
+the JSON in the answer, so spacing and surrounding prose don't matter. Task version
+1.0.1 (file v1.0.0) switched to it from exact match.
 """
 
 from inspect_ai import Task, task
 from inspect_ai.solver import generate
 
 from bench.arinc429.b1 import PREAMBLE
-from bench.arinc429.b3 import B3_VERSION, TASK_FILE, validate_samples
+from bench.arinc429.b3 import B3_TASK_VERSION, TASK_FILE, validate_samples
 from bench.loader import load_preamble, load_tasks
 from bench.provenance import sha256_file
 from bench.provenance_solver import record_provenance
-from bench.scorers import deterministic_exact_match
+from bench.scorers import arinc429_bnr_bcd_capability_scorer
 
 
 @task
@@ -48,7 +52,7 @@ def b3_arinc429_bus_conformance() -> Task:
             record_provenance(sha256_file(TASK_FILE), load_preamble(PREAMBLE)),
             generate(),
         ],
-        scorer=deterministic_exact_match(),
-        version=B3_VERSION,
+        scorer=arinc429_bnr_bcd_capability_scorer(),
+        version=B3_TASK_VERSION,
         metadata={"subfamily": "B3", "task_file": TASK_FILE.name},
     )

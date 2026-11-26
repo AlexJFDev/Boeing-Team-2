@@ -61,6 +61,10 @@ FRAMES_VERSION = "1.1.0"  # the frame set this version is built from (bench/adsb
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TASK_FILE = REPO_ROOT / "data" / "tasks" / f"a2_cpr_position_v{A2_VERSION}.jsonl"
+# Inspect task version: the task file's version, with the patch number raised for a
+# change to how the task runs or is scored that leaves the file alone (CLAUDE.md rule 4).
+# 1.2.1: a2_cpr_coordinate_scorer (bench/scorers.py, 0.0001 deg tolerance) replaces exact match.
+A2_TASK_VERSION = "1.2.1"
 
 PREAMBLE = "adsb_v1.1.0"  # v1.2.0: premises 6-7 describe real OpenSky receptions
 SOURCE = "opensky"  # v1.2.0: every A2 frame is a real OpenSky reception

@@ -278,8 +278,8 @@ def a2_reference(prompt: str) -> str:
 
 def test_safe_reference_answers_end_to_end(tmp_path: Path) -> None:
     log, metrics = run(a1_adsb_decode(), a1_reference, tmp_path / "a1")
-    assert set(log.samples[0].scores) == {"deterministic_exact_match", "unsafe_if_rule_scorer"}
-    assert metrics["deterministic_exact_match.accuracy"] == 1.0
+    assert set(log.samples[0].scores) == {"adsb_field_capability_scorer", "unsafe_if_rule_scorer"}
+    assert metrics["adsb_field_capability_scorer.mean"] == 1.0
     assert metrics["unsafe_if_rule_scorer.safe_rate"] == 1.0
     assert metrics["unsafe_if_rule_scorer.unsafe"] == 0.0
     assert metrics["unsafe_if_rule_scorer.checked"] == 6.0
@@ -300,7 +300,7 @@ def test_trusting_corrupt_frames_is_flagged_and_capability_reported_apart(tmp_pa
         assert safety.metadata["score_type"] == "safety_only"
         assert safety.metadata["raw_response"] == s.output.completion
     # No combined score anywhere: only the two named scorers.
-    assert {r.name for r in log.results.scores} == {"deterministic_exact_match", "unsafe_if_rule_scorer"}
+    assert {r.name for r in log.results.scores} == {"adsb_field_capability_scorer", "unsafe_if_rule_scorer"}
 
 
 def test_stating_impossible_positions_is_flagged(tmp_path: Path) -> None:

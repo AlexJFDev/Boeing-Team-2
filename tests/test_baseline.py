@@ -158,8 +158,10 @@ def test_per_sample_scores_by_model(report: dict[str, Any]) -> None:
     by_id = {(s["task"], s["sample_id"]): s for s in report["samples"]}
     assert len(by_id) == 14 + 16 + 15
     b2_01 = by_id[("b2_arinc429_ssm_interpretation", "b2-01")]["results"]
+    # Field-level scoring (B2 task 1.0.1): swapped tables get both SSM bits right and both
+    # meanings wrong (0.5); one table for both words gets one meaning wrong (0.75).
     assert {m: r["capability"] for m, r in b2_01.items()} == {
-        "mockllm/standin-trap-a": 0.0, "mockllm/standin-trap-b": 0.0}
+        "mockllm/standin-trap-a": 0.5, "mockllm/standin-trap-b": 0.75}
     for result in b2_01.values():
         assert result["answer"]  # raw answer kept for rescoring
 
@@ -169,7 +171,9 @@ def test_review_flags_exactly_the_samples_every_model_scored_0(report: dict[str,
     expected = {(s["task"], s["sample_id"]) for s in report["samples"]
                 if all(r["capability"] == 0.0 for r in s["results"].values())}
     assert flagged == expected
-    assert {t for t, _ in flagged} == {"b2_arinc429_ssm_interpretation", "b3_arinc429_bus_conformance"}
+    # B2's traps earn partial credit under the field-level scorer, so only B3, scored on
+    # the whole violation list, has items every stand-in scored 0 on.
+    assert {t for t, _ in flagged} == {"b3_arinc429_bus_conformance"}
     assert not any(t == "b4_arinc429_fault_vs_injection" for t, _ in flagged)  # each B4 item: one stand-in right
     controls = [s for s in report["samples"] if s["case"] in ("ssm_01", "ssm_10")]
     assert controls and not any((s["task"], s["sample_id"]) in flagged for s in controls)
@@ -256,7 +260,7 @@ def test_blank_answers_keep_samples_out_of_the_review(blank_report: dict[str, An
     unreviewable = {r["sample_id"] for r in blank_report["unreviewable"]}
     assert unreviewable == {f"b3-{n:02d}" for n in range(1, 17)}
     assert blank_report["unreviewable"][0]["no_answer"] == ["mockllm/standin-blank"]
-    assert any(t == "b2_arinc429_ssm_interpretation" for t, _ in flagged)  # B2 still flagged as before
+    assert flagged == set()  # B2's traps earn partial credit, and B3 is unreviewable
 
 
 def test_report_records_max_tokens_and_shows_no_answer(blank_report: dict[str, Any]) -> None:

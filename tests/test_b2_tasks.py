@@ -294,8 +294,17 @@ def run_scores(answer_for, tmp_path: Path) -> dict[str, float]:
                          log_dir=str(tmp_path), display="none")
     assert log.status == "success", log.error
     assert log.samples is not None and len(log.samples) == len(SAMPLES)
-    assert log.eval.task_version == b2.B2_VERSION
+    assert log.eval.task_version == b2.B2_TASK_VERSION
     return {str(s.id): float(next(iter(s.scores.values())).value) for s in log.samples}
+
+
+def run_fields(answer_for, tmp_path: Path) -> dict[str, dict[str, bool]]:
+    """Per-field results of the field-level scorer, by sample."""
+    [log] = inspect_eval(b2_arinc429_ssm_interpretation(), model=scripted_model(answer_for),
+                         log_dir=str(tmp_path), display="none")
+    assert log.status == "success", log.error
+    return {str(s.id): (next(iter((s.scores or {}).values())).metadata or {})["per_field_results"]
+            for s in log.samples or []}
 
 
 def test_correct_answers_pass_end_to_end(tmp_path: Path) -> None:
@@ -304,17 +313,26 @@ def test_correct_answers_pass_end_to_end(tmp_path: Path) -> None:
 
 
 def test_swapped_ssm_answers_fail_end_to_end(tmp_path: Path) -> None:
-    scores = run_scores(lambda w: canonical(b2.table_answer(w, "other")), tmp_path)
+    # Field-level scoring: the SSM bits are read right, so only the two meanings fail.
+    answer = lambda w: canonical(b2.table_answer(w, "other"))  # noqa: E731
+    scores = run_scores(answer, tmp_path / "scores")
+    fields = run_fields(answer, tmp_path / "fields")
     for sample in DISCRIMINATING:
-        assert scores[str(sample.id)] == 0.0, sample.id
+        sid = str(sample.id)
+        assert scores[sid] == 0.5, sid
+        assert {k: v for k, v in fields[sid].items() if k.endswith("_meaning")} == \
+            {"word_1_meaning": False, "word_2_meaning": False}, sid
     for sample in CONTROLS:
         assert scores[str(sample.id)] == 1.0, sample.id
 
 
 @pytest.mark.parametrize("table", ["BNR", "BCD"])
 def test_one_table_for_both_words_fails_end_to_end(table: str, tmp_path: Path) -> None:
-    scores = run_scores(lambda w: canonical(b2.table_answer(w, table)), tmp_path)
-    assert all(scores[str(s.id)] == 0.0 for s in DISCRIMINATING)
+    # One meaning is right (the word whose table was used), the other fails.
+    fields = run_fields(lambda w: canonical(b2.table_answer(w, table)), tmp_path)
+    for s in DISCRIMINATING:
+        meanings = [v for k, v in fields[str(s.id)].items() if k.endswith("_meaning")]
+        assert sorted(meanings) == [False, True], s.id
 
 
 def test_not_rejecting_a_corrupt_word_fails_end_to_end(tmp_path: Path) -> None:
@@ -324,5 +342,9 @@ def test_not_rejecting_a_corrupt_word_fails_end_to_end(tmp_path: Path) -> None:
             bits = decoder.read_fields(word)["ssm_bits"]
             parts.append({"meaning": "no_computed_data", "ssm": bits})
         return canonical(b2.combine(parts))
-    scores = run_scores(no_reject, tmp_path)
-    assert all(scores[str(s.id)] == 0.0 for s in by_case("parity_fault"))
+    scores = run_scores(no_reject, tmp_path / "scores")
+    fields = run_fields(no_reject, tmp_path / "fields")
+    for s in by_case("parity_fault"):
+        rejected = next(k for k, v in json.loads(str(s.target)).items() if v == "reject")
+        assert fields[str(s.id)][rejected] is False, s.id
+        assert scores[str(s.id)] < 1.0, s.id

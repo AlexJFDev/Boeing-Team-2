@@ -17,7 +17,8 @@ store, where a family stores one, and with the target everywhere else:
                      B4: values checked, parity ignored
 
 So the report shows per-task scores that differ by model, and the review list flags the
-items both stand-ins miss: B2's discriminating items and every B3 item. Those items are
+items both stand-ins score 0 on: every B3 item. B2's traps get partial credit from the
+field-level scorer (0.5 and 0.75 on the discriminating items), so they are not flagged. Those items are
 correct, which is the point of the review: a flag asks a person to look, it does not
 say the item is wrong.
 

@@ -315,7 +315,7 @@ def test_inspect_eval_runs_end_to_end(tmp_path: Path) -> None:
                          display="none")
     assert log.status == "success", log.error
     assert log.samples is not None and len(log.samples) == len(SAMPLES)
-    assert log.eval.task_version == a1.A1_VERSION
+    assert log.eval.task_version == a1.A1_TASK_VERSION
     for sample in log.samples:
         assert sample.metadata["frame"] in sample.messages[0].text
         assert sample.target

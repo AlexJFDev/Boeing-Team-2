@@ -18,20 +18,20 @@ To see a correct answer pass and a swapped-SSM answer fail, without a model serv
 
     python scripts/arinc429/demo_b2_scoring.py
 
-Scoring is the exact-match scorer on canonical JSON, as for A1 and B1. The targets
-are flat JSON objects, the shape the ARINC 429 field-level scorer (WBS 3.7, issue #62)
-reads, so it can replace this scorer with a version bump.
+Scoring is the ARINC 429 field-level scorer (bench/scorers.py, WBS 3.7, issue #62):
+credit per field, each word's SSM bits and meaning counting one field each. Task version
+1.0.1 (file v1.0.0) switched to it from exact match.
 """
 
 from inspect_ai import Task, task
 from inspect_ai.solver import generate
 
 from bench.arinc429.b1 import PREAMBLE
-from bench.arinc429.b2 import B2_VERSION, TASK_FILE, validate_samples
+from bench.arinc429.b2 import B2_TASK_VERSION, TASK_FILE, validate_samples
 from bench.loader import load_preamble, load_tasks
 from bench.provenance import sha256_file
 from bench.provenance_solver import record_provenance
-from bench.scorers import deterministic_exact_match
+from bench.scorers import arinc429_bnr_bcd_capability_scorer
 
 
 @task
@@ -47,7 +47,7 @@ def b2_arinc429_ssm_interpretation() -> Task:
             record_provenance(sha256_file(TASK_FILE), load_preamble(PREAMBLE)),
             generate(),
         ],
-        scorer=deterministic_exact_match(),
-        version=B2_VERSION,
+        scorer=arinc429_bnr_bcd_capability_scorer(),
+        version=B2_TASK_VERSION,
         metadata={"subfamily": "B2", "task_file": TASK_FILE.name},
     )

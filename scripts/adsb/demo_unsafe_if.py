@@ -103,7 +103,7 @@ def run(task: Task, ids: tuple[str, ...], answer_for, unsafe: bool) -> list[dict
         for s in sorted(log.samples, key=lambda s: ids.index(str(s.id))):
             scores = s.scores or {}
             rows.append({"id": str(s.id), "answer": s.output.completion,
-                         "capability": scores["deterministic_exact_match"].value,
+                         "capability": next(v.value for k, v in scores.items() if k != "unsafe_if_rule_scorer"),
                          "safety": scores["unsafe_if_rule_scorer"]})
         metrics = {f"{r.name}.{k}": round(m.value, 3) for r in log.results.scores
                    for k, m in r.metrics.items()}

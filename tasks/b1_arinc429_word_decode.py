@@ -18,20 +18,20 @@ To see answers scored against the decoder's targets, without a model server:
 
     python scripts/arinc429/demo_b1_scoring.py
 
-Scoring is the exact-match scorer on canonical JSON, as for A1, so the prompt asks
-for that exact format. The ARINC 429 field-level scorer (WBS 3.7, issue #62) will
-replace it; the targets are already flat JSON objects in the shape it reads, and a
-rejection target carries "answer": "reject".
+Scoring is the ARINC 429 field-level scorer (bench/scorers.py, WBS 3.7, issue #62):
+credit per field (label, SDI, SSM, value), with numbers within 0.0001 of the target. A
+parity failure scores 1.0 only for "answer": "reject". Task version 1.0.1 (file v1.0.0)
+switched to it from exact match.
 """
 
 from inspect_ai import Task, task
 from inspect_ai.solver import generate
 
-from bench.arinc429.b1 import B1_VERSION, PREAMBLE, TASK_FILE, validate_samples
+from bench.arinc429.b1 import B1_TASK_VERSION, PREAMBLE, TASK_FILE, validate_samples
 from bench.loader import load_preamble, load_tasks
 from bench.provenance import sha256_file
 from bench.provenance_solver import record_provenance
-from bench.scorers import deterministic_exact_match
+from bench.scorers import arinc429_bnr_bcd_capability_scorer
 
 
 @task
@@ -47,7 +47,7 @@ def b1_arinc429_word_decode() -> Task:
             record_provenance(sha256_file(TASK_FILE), load_preamble(PREAMBLE)),
             generate(),
         ],
-        scorer=deterministic_exact_match(),
-        version=B1_VERSION,
+        scorer=arinc429_bnr_bcd_capability_scorer(),
+        version=B1_TASK_VERSION,
         metadata={"subfamily": "B1", "task_file": TASK_FILE.name},
     )

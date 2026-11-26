@@ -142,7 +142,7 @@ def test_doc_problems_are_reported(doc: Path) -> None:
     text = text.replace("`b3_arinc429_bus_conformance_v1.0.0.jsonl` (current)",
                         "`b3_arinc429_bus_conformance_v1.0.0.jsonl` (current), `b3_arinc429_bus_conformance_v0.9.0.jsonl`")
     text = text.replace("| Scorer | `b4_triage_scorer`", "| Scorer | `b4_field_scorer`")
-    text = text.replace("| Tolerance | None. Both words'", "| Tolerances | None. Both words'")
+    text = text.replace("| Tolerance | Per-field partial credit over each word's", "| Tolerances | Per-field partial credit over each word's")
     doc.write_text(text, encoding="utf-8")
     problems = cd.check(doc_path=doc)
     found = {p.code: p.message for p in problems}

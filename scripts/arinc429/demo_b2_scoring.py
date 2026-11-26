@@ -10,8 +10,9 @@ is the same every time. Each sample is run twice, once per kind of answer:
 
 A third pass reads every SSM with the BNR table only, the "one memorised table"
 failure the catalogue describes. Correct answers should pass everywhere. The wrong
-answers fail on the discriminating items (SSM 11 and 00) and pass on the controls
-(SSM 01 and 10), where both tables agree.
+answers lose credit on the discriminating items (SSM 11 and 00) and pass on the controls
+(SSM 01 and 10), where both tables agree. Scoring is field-level (task 1.0.1): a swap
+gets the SSM bits right and both meanings wrong, so it scores 0.5, not 0.
 
 Usage (from the repo root):
     python scripts/arinc429/demo_b2_scoring.py
@@ -84,7 +85,7 @@ def main() -> int:
         scores = results[kind]
         disc = sum(scores[s] for s in discriminating)
         ctrl = sum(v for s, v in scores.items() if s not in discriminating)
-        print(f"{kind:<16} {sum(scores.values()) / len(scores):>7.3f} {disc:>23.0f}/{len(discriminating)} {ctrl:>17.0f}/4")
+        print(f"{kind:<16} {sum(scores.values()) / len(scores):>7.3f} {disc:>23.2f}/{len(discriminating)} {ctrl:>17.2f}/4")
     return 0
 
 
