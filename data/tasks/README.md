@@ -11,6 +11,10 @@ B ARINC 429, C ARINC 664, D ACARS); the item type such as A1 goes in `metadata`.
 Version rules match `data/adsb/README.md`: a file that a run has used is frozen, and
 a change gets a new file name with a bumped version.
 
+Sources, oracles and scoring tolerances for each family are in
+[docs/corpus.md](../../docs/corpus.md); a new task file version must be added there too
+(`python -m bench.corpus_doc` checks it, and CI runs it).
+
 Every file here is listed with its sha256 in `MANIFEST.json` (WBS 1.14). The loader
 refuses a task file that is unlisted or does not match. List a new file with:
 
