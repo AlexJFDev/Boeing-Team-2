@@ -1,0 +1,36 @@
+# Baseline evaluation of the ADS-B and ARINC 429 suites (WBS 3.8, issue #63), VT ARC models,
+# streamed.
+#   bench baseline configs/baseline_v1.4.0.yaml
+# Every task runs against every model with Inspect's eval_set. Logs and the report go
+# to logs/baseline/v1.4.0 (git-ignored); running again resumes an interrupted baseline.
+#
+# Same models, endpoint and generate config as v1.3.0 (see that file for the ARC notes:
+# .env needs ARC_BASE_URL and ARC_API_KEY, and the VT VPN when off campus). What changed
+# is the scoring: A1/A2 task 1.2.1 and B1-B3 task 1.0.1 use the tolerance and field-level
+# scorers in bench/scorers.py instead of exact match (ARINC 429 scorer 1.1.0: a wrong SSM
+# zeroes the value). The task files are the same as v1.3.0's, but the capability scores
+# are not comparable with v1.3.0's, so this is a new baseline version with its own logs.
+baseline_version: 1.4.0
+tasks:
+  - tasks/a1_adsb_decode.py               # A1 task 1.2.1 (file v1.2.0), 29 samples
+  - tasks/a2_cpr_position.py              # A2 task 1.2.1 (file v1.2.0), 28 samples
+  - tasks/b1_arinc429_word_decode.py      # B1 task 1.0.1 (file v1.0.0), 27 samples
+  - tasks/b2_arinc429_ssm_interpretation.py  # B2 task 1.0.1 (file v1.0.0), 14 samples
+  - tasks/b3_arinc429_bus_conformance.py  # B3 task 1.0.1 (file v1.0.0), 16 samples
+  - tasks/b4_arinc429_fault_vs_injection.py  # B4 v1.0.0, 15 samples
+models:
+  - openai-api/arc/gpt-oss-120b
+  - openai-api/arc/GLM-5.3
+  - openai-api/arc/DeepSeek-V4.1-Flash
+model_args:
+  stream: true
+generate_config:
+  temperature: 0
+  seed: 42
+  max_tokens: 32000
+  max_connections: 5
+metadata:
+  corpus_version: protocol-suites-1.0.0
+  suites: {a1: 1.2.1, a2: 1.2.1, b1: 1.0.1, b2: 1.0.1, b3: 1.0.1, b4: 1.0.0}
+  endpoint: VT ARC LLM API (llm-api.arc.vt.edu), streamed
+retry_attempts: 3
