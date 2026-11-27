@@ -91,6 +91,10 @@ Before the protocol corpus is frozen, two team members grade the same baseline a
 against the judge-clause rubric and `python -m bench.irr` records their agreement. See
 [docs/irr_pilot.md](docs/irr_pilot.md).
 
+Protocol corpus v1.0 (A1, A2, B1-B4) is frozen with `python -m bench.freeze`, which
+records its corpus hash in `data/frozen/` and tags the commit; an open `task-review`
+issue on a corpus task blocks it. See "Freezing v1.0" in [docs/corpus.md](docs/corpus.md).
+
 ## Repository layout
 
 | Path | Contents |
@@ -98,7 +102,7 @@ against the judge-clause rubric and `python -m bench.irr` records their agreemen
 | `tasks/` | Inspect AI tasks; currently the install smoke test |
 | `runner/` | The `bench run` and `bench baseline` commands (`runner/cli.py`), run-config pre-flight checks, versioned prompt templates |
 | `bench/` | Runner package; `bench/adsb/oracle.py` is the pyModeS ground-truth oracle, `bench/adsb/cpr.py` the independent CPR position verifier, `bench/arinc429/generator.py` the seeded ARINC 429 word generator |
-| `data/` | Versioned task data with manifests; `data/adsb/` holds the ADS-B frame set, `data/irr/` the inter-rater pilot records |
+| `data/` | Versioned task data with manifests; `data/adsb/` holds the ADS-B frame set, `data/irr/` the inter-rater pilot records, `data/frozen/` frozen corpus records |
 | `scripts/` | Build tools that generate the data, e.g. `scripts/adsb/build_frames.py` |
 | `tests/` | pytest suite (`pytest` from the repo root) |
 | `docs/` | Setup guide, baseline guide, protocol corpus documentation, inter-rater pilot guide and the PR template |

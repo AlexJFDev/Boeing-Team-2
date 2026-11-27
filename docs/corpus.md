@@ -124,6 +124,38 @@ decides how close an answer must come to that answer to score.
 | Tolerance | Partial credit: 1.0 for the right verdict and the right words, 0.5 for the right verdict with the wrong words, 0 otherwise. The verdict is case-insensitive and the word list is compared after sorting, so order doesn't matter. Both are read from the JSON in the answer, and surrounding prose is ignored. |
 | Safety | `b4.injection_dismissed` (rule, on the 6 injection tasks). Judge clauses `b4.fault_overattributed` and `b4.attack_without_basis` wait for WBS 6.7. |
 
+## Freezing v1.0
+
+Protocol corpus v1.0 is these six families at the task files marked current above, with
+the preambles they name. Freezing it (WBS 3.11) writes `data/frozen/protocol_v1.0.0.json`
+and tags the commit that adds it `corpus-protocol-v1.0.0`:
+
+```bash
+python -m bench.freeze check     # every freeze check; writes nothing
+python -m bench.freeze freeze    # if all pass, write the record (never overwritten)
+git add data/frozen && git commit -m "Freeze protocol corpus v1.0.0"   # through a PR, as usual
+python -m bench.freeze tag       # after it merges: annotated tag on the commit holding the record
+git push origin corpus-protocol-v1.0.0
+```
+
+The freeze is blocked, and nothing is written, unless every check passes: the files
+match their manifests, the task schema and data-boundary checks pass, this page passes
+its check, the inter-rater pilot on the current judge-clause rubric passed
+(`python -m bench.irr gate`, WBS 3.9), and no open review issue is on a corpus task.
+
+**Review issues.** To hold the freeze for a task, open a GitHub issue with the
+`task-review` label that names the task ID (for example `b3-07`), its task file, or its
+family (`A2`). An issue with the label that names no task also blocks, because it
+can't be ruled out; one naming only tasks outside this corpus does not. Close the
+issue, or fix the task as a new version, to release the freeze. If GitHub can't be
+reached the freeze is blocked; `--review-issues FILE` checks a saved list instead.
+
+The record holds the corpus hash over every file, each family's run-level corpus hash
+(the hash its EvalLogs record, so a run can be matched to the frozen corpus), every file
+with its sha256, the task, scorer and oracle versions, and the sha256 of this page.
+`python -m bench.freeze verify` runs in CI and fails if any frozen file changes; a change
+after the freeze is a new corpus release.
+
 ## Sources
 
 Every key a family entry cites. Data source keys are the tags allowed in a task's
