@@ -20,8 +20,10 @@ real model needs a server; the real baseline is ``bench baseline`` on a machine 
 
 from __future__ import annotations
 
+import codecs
 import json
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -189,6 +191,38 @@ def test_report_files(report: dict[str, Any], rehearsal_dir: Path) -> None:
     rows = (out / "per_sample.csv").read_text().splitlines()
     assert len(rows) == 1 + 45 * 2
     assert rows[0].endswith("no_answer,cut_off,stop_reason,answer")
+
+
+def test_report_files_are_utf8_whatever_the_os_default(rehearsal_dir: Path, tmp_path: Path,
+                                                       monkeypatch: pytest.MonkeyPatch) -> None:
+    # On Windows the default encoding is cp1252, which can't write e.g. "CO\u2082" from a
+    # model's answer: the v1.4.0 baseline crashed writing per_sample.csv.
+    copy = tmp_path / "v1.0.0"
+    shutil.copytree(rehearsal_dir, copy)
+    shutil.rmtree(copy / "report")
+    text = "CO\u2082 \u00b15% \u2014 \u2713"
+    real = baseline_report.build_report
+
+    def with_unicode(log_dir: Path) -> dict[str, Any]:
+        report = real(log_dir)
+        first = report["samples"][0]["results"]
+        first[next(iter(first))]["answer"] = text
+        return report
+
+    monkeypatch.setattr(baseline_report, "build_report", with_unicode)
+    baseline_report.write_report(copy)
+    csv_bytes = (copy / "report" / "per_sample.csv").read_bytes()
+    assert csv_bytes.startswith(codecs.BOM_UTF8)  # so spreadsheets read it as UTF-8
+    assert text in csv_bytes.decode("utf-8-sig")
+    saved = json.loads((copy / "report" / "report.json").read_text(encoding="utf-8"))
+    assert text in [r["answer"] for r in saved["samples"][0]["results"].values()]
+
+    # No file in the report writer may fall back to the platform default encoding.
+    script = (f"import pathlib; from bench import baseline_report; "
+              f"baseline_report.write_report(pathlib.Path({str(copy)!r}))")
+    subprocess.run([sys.executable, "-X", "warn_default_encoding",
+                    "-W", "error::EncodingWarning:bench.baseline_report", "-c", script],
+                   cwd=Path(__file__).resolve().parents[1], check=True)
 
 
 def test_a_missing_pair_is_reported_and_never_flagged(rehearsal_dir: Path, tmp_path: Path) -> None:
