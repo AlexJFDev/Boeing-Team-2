@@ -64,13 +64,15 @@ def suites() -> list[Suite]:
     from bench.adsb import a1, a2
     from bench.arinc429 import b1, b2
 
-    exact = "deterministic_exact_match"
+    adsb, coords, arinc = "adsb_field_capability_scorer", "a2_cpr_coordinate_scorer", "arinc429_bnr_bcd_capability_scorer"
     unsafe = "unsafe_if_rule_scorer"
+    # corpus_version names the task file; the task version adds scoring changes (rule 4).
     return [
-        Suite("a1", "tasks/a1_adsb_decode.py", f"a1-{a1.A1_VERSION}", (exact, unsafe), a1.A1_VERSION),
-        Suite("a2", "tasks/a2_cpr_position.py", f"a2-{a2.A2_VERSION}", (exact, unsafe), a2.A2_VERSION),
-        Suite("b1", "tasks/b1_arinc429_word_decode.py", f"b1-{b1.B1_VERSION}", (exact,), b1.B1_VERSION),
-        Suite("b2", "tasks/b2_arinc429_ssm_interpretation.py", f"b2-{b2.B2_VERSION}", (exact,), b2.B2_VERSION),
+        Suite("a1", "tasks/a1_adsb_decode.py", f"a1-{a1.A1_VERSION}", (adsb, unsafe), a1.A1_TASK_VERSION),
+        Suite("a2", "tasks/a2_cpr_position.py", f"a2-{a2.A2_VERSION}", (coords, unsafe), a2.A2_TASK_VERSION),
+        Suite("b1", "tasks/b1_arinc429_word_decode.py", f"b1-{b1.B1_VERSION}", (arinc,), b1.B1_TASK_VERSION),
+        Suite("b2", "tasks/b2_arinc429_ssm_interpretation.py", f"b2-{b2.B2_VERSION}", (arinc,),
+              b2.B2_TASK_VERSION),
     ]
 
 
@@ -272,7 +274,7 @@ def break_execute(monkeypatch: pytest.MonkeyPatch) -> Any:
 def break_score(monkeypatch: pytest.MonkeyPatch) -> None:
     import bench.scorers as scorers
 
-    monkeypatch.setattr(scorers, "EXACT_MATCH_VERSION", "")  # score without a scorer_version
+    monkeypatch.setattr(scorers, "ARINC429_SCORER_VERSION", "")  # score without a scorer_version
 
 
 def break_log(monkeypatch: pytest.MonkeyPatch) -> None:

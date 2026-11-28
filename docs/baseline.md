@@ -6,12 +6,18 @@ model gets right for ground-truth review.
 
 | Suite | Task | Version | Samples | Capability scorer | Safety scorer |
 | --- | --- | --- | --- | --- | --- |
-| A1 | `tasks/a1_adsb_decode.py` | 1.2.0 | 29 | exact match | unsafe-if rules (6 checked) |
-| A2 | `tasks/a2_cpr_position.py` | 1.2.0 | 28 | exact match | unsafe-if rules (8 checked) |
-| B1 | `tasks/b1_arinc429_word_decode.py` | 1.0.0 | 27 | exact match | none |
-| B2 | `tasks/b2_arinc429_ssm_interpretation.py` | 1.0.0 | 14 | exact match | none |
-| B3 | `tasks/b3_arinc429_bus_conformance.py` | 1.0.0 | 16 | exact match | none |
+| A1 | `tasks/a1_adsb_decode.py` | 1.2.1 | 29 | ADS-B field-level (per-field credit) | unsafe-if rules (6 checked) |
+| A2 | `tasks/a2_cpr_position.py` | 1.2.1 | 28 | A2 coordinates (0.0001° tolerance) | unsafe-if rules (8 checked) |
+| B1 | `tasks/b1_arinc429_word_decode.py` | 1.0.1 | 27 | ARINC 429 field-level (per-field credit) | none |
+| B2 | `tasks/b2_arinc429_ssm_interpretation.py` | 1.0.1 | 14 | ARINC 429 field-level (per-field credit) | none |
+| B3 | `tasks/b3_arinc429_bus_conformance.py` | 1.0.1 | 16 | ARINC 429 field-level (whole list) | none |
 | B4 | `tasks/b4_arinc429_fault_vs_injection.py` | 1.0.0 | 15 | B4 triage (1, 0.5, 0) | unsafe-if rules (6 checked) |
+
+Versions are task versions. A1/A2 1.2.1 and B1–B3 1.0.1 run the same task files as
+1.2.0 and 1.0.0 but score with the tolerance and field-level scorers in
+`bench/scorers.py` instead of exact match; scoring details per family are in
+[corpus.md](corpus.md). Baseline runs before the switch (logs with the old task
+versions) used exact match, so their capability scores are not comparable with new runs.
 
 Capability and safety are reported in separate columns and never combined (CLAUDE.md
 rule 2).
@@ -124,7 +130,9 @@ answer. Check, in order:
 2. **The premises.** Is everything needed to reach the answer stated in the task? This is
    the catalogue's most common defect.
 3. **The format.** Did the models answer correctly in a form the scorer doesn't accept?
-   Exact match gives 0 for the right answer in the wrong format.
+   The scorers read the JSON in an answer, so prose and spacing are fine, but a missing
+   key, a string where a number belongs (or the reverse) or a B3 list in another order
+   still scores 0.
 4. **The answers.** Do the models make the same mistake? A shared mistake that matches a
    stored trap answer (for example B2's `swapped_answer`) points to the item doing its job.
 
@@ -144,6 +152,10 @@ Rules for the flag:
   larger `max_tokens` before reviewing them. In v1.1.0, gpt-oss with 4096 tokens left 62 of
   129 samples blank, and 50 of the 94 flagged samples were flagged only because of that.
 - A run with one model flags every sample that model scored 0, and the report says so.
+- Partial credit makes a flag rarer. Under the field-level scorers, a model that gets
+  some fields right scores above 0, so an item is flagged only when every model misses
+  every field. An item where no model gets full credit can still deserve a look, in the
+  per-sample table.
 - When a pair has more than one log (after a retry), the newest successful one is used.
 
 ## Rehearsal without a model server
@@ -157,6 +169,8 @@ the models with two scripted stand-ins. Each stand-in answers with a wrong answe
 task files already store (B1's forward-read label, B2's swapped or one-table SSM, B3's
 contradicting rate or wrong bus speed, B4's parity-only or values-only verdict), and with
 the target elsewhere. It writes to `logs/baseline-rehearsal/v1.0.0`, never to the real
-baseline directory. It flags 24 samples: B2's 8 discriminating SSM 11/00 items and all 16
-B3 items. Those items are correct, so the rehearsal also shows a flag is a question, not
+baseline directory. It flags the 16 B3 items, which both stand-ins score 0 on. B2's traps
+get partial credit from the field-level scorer (0.5 and 0.75), so they are not flagged;
+before task version 1.0.1, under exact match, B2's 8 discriminating items were flagged too.
+Those items are correct, so the rehearsal also shows a flag is a question, not
 a verdict. The stand-ins are not models, and their scores mean nothing about any model.

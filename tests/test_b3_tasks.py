@@ -301,7 +301,7 @@ def run_scores(answer_for, tmp_path: Path) -> dict[str, float]:
                          log_dir=str(tmp_path), display="none")
     assert log.status == "success", log.error
     assert log.samples is not None and len(log.samples) == len(SAMPLES)
-    assert log.eval.task_version == b3.B3_VERSION
+    assert log.eval.task_version == b3.B3_TASK_VERSION
     return {str(s.id): float(next(iter(s.scores.values())).value) for s in log.samples}
 
 

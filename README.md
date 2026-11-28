@@ -82,6 +82,10 @@ per-task report, use `bench baseline configs/baseline_v1.3.0.yaml` (VT ARC model
 streamed) or `configs/baseline_v1.0.0.yaml` (local Ollama models). See
 [docs/baseline.md](docs/baseline.md).
 
+Each task family's data source, source specification, oracle and scoring tolerance is
+documented in [docs/corpus.md](docs/corpus.md). Look one up with
+`python -m bench.corpus_doc --family A2`; CI fails a pull request whose tasks cite a
+source or oracle that page doesn't list.
 Before the protocol corpus is frozen, two team members grade the same baseline answers
 against the judge-clause rubric and `python -m bench.irr` records their agreement. See
 [docs/irr_pilot.md](docs/irr_pilot.md).
@@ -96,7 +100,7 @@ against the judge-clause rubric and `python -m bench.irr` records their agreemen
 | `data/` | Versioned task data with manifests; `data/adsb/` holds the ADS-B frame set, `data/irr/` the inter-rater pilot records |
 | `scripts/` | Build tools that generate the data, e.g. `scripts/adsb/build_frames.py` |
 | `tests/` | pytest suite (`pytest` from the repo root) |
-| `docs/` | Setup guide, baseline guide, inter-rater pilot guide and the PR template |
+| `docs/` | Setup guide, baseline guide, protocol corpus documentation, inter-rater pilot guide and the PR template |
 | `.github/workflows/` | CI on every PR: branch name, secret scan (gitleaks), unit tests (`pytest`), regression set against the baseline (`regression`), task schema (`schema`) and data boundary (`data-boundary`) |
 | `requirements.txt` | Pinned Python dependencies |
 | `.devcontainer/`, `.vscode/` | Codespaces / VS Code configuration |

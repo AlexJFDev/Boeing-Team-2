@@ -73,6 +73,10 @@ B1_VERSION = "1.0.0"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TASK_FILE = REPO_ROOT / "data" / "tasks" / f"b1_arinc429_word_decode_v{B1_VERSION}.jsonl"
+# Inspect task version: the task file's version, with the patch number raised for a
+# change to how the task runs or is scored that leaves the file alone (CLAUDE.md rule 4).
+# 1.0.1: arinc429_bnr_bcd_capability_scorer (bench/scorers.py) replaces exact match.
+B1_TASK_VERSION = "1.0.1"
 PREAMBLE = "arinc429_v1.0.0"
 PREAMBLE_FILE = REPO_ROOT / "data" / "preambles" / f"{PREAMBLE}.txt"
 SOURCE = "spec-synthesized"

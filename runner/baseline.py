@@ -68,7 +68,7 @@ def _get(cfg: dict[str, Any], dotted: str) -> Any:
 
 def load_and_check(path: str | Path) -> dict[str, Any]:
     """The parsed config, or BaselineConfigError naming every problem."""
-    cfg = yaml.safe_load(Path(path).read_text())
+    cfg = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     if not isinstance(cfg, dict):
         raise BaselineConfigError(f"{path}: baseline config must be a YAML mapping")
     problems = [f"missing required field {f}" for f in REQUIRED if _get(cfg, f) is None]

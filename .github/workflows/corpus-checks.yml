@@ -2,7 +2,9 @@ name: Corpus checks
 
 # WBS 1.28 (issue #36). On every pull request, checks the task corpus two ways:
 #   schema         bench/validate.py: every task file in data/tasks is well formed, uses
-#                  existing preambles and matches its manifest (WBS 1.12/1.13/1.14)
+#                  existing preambles and matches its manifest (WBS 1.12/1.13/1.14);
+#                  bench/corpus_doc.py: docs/corpus.md documents every task family and
+#                  every source and oracle the tasks cite (WBS 3.10)
 #   data-boundary  bench/boundary.py: data/ and prompts/ hold only approved-source data
 #                  and no real-looking registrations or keys (WBS 1.27)
 # With both jobs required status checks on development, a task that fails either one
@@ -48,12 +50,20 @@ jobs:
         shell: bash
         run: python -m bench.validate --annotations | tee schema.log
 
+      # Runs even when validation failed, so both sets of problems show on one push.
+      - name: Check the corpus documentation
+        if: success() || failure()
+        shell: bash
+        run: python -m bench.corpus_doc --annotations | tee corpus_doc.log
+
       - name: Write the job summary
         if: always()
         shell: bash
         run: |
           { echo "## Task schema check"; echo; echo '```';
             grep -v '^::' schema.log 2>/dev/null || echo "The validator did not run; see the job log.";
+            echo '```'; echo; echo "## Corpus documentation check"; echo; echo '```';
+            grep -v '^::' corpus_doc.log 2>/dev/null || echo "The check did not run; see the job log.";
             echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
   data-boundary:

@@ -84,6 +84,10 @@ B3_VERSION = "1.0.0"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TASK_FILE = REPO_ROOT / "data" / "tasks" / f"b3_arinc429_bus_conformance_v{B3_VERSION}.jsonl"
+# Inspect task version: the task file's version, with the patch number raised for a
+# change to how the task runs or is scored that leaves the file alone (CLAUDE.md rule 4).
+# 1.0.1: arinc429_bnr_bcd_capability_scorer (bench/scorers.py) replaces exact match.
+B3_TASK_VERSION = "1.0.1"
 
 SEED = 5350
 N_WORDS = 3000

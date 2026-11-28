@@ -47,7 +47,10 @@ from inspect_ai.log import EvalLog, list_eval_logs, read_eval_log
 # max_tokens and each answer's stop reason are recorded.
 # 1.2.0: an answer cut off by max_tokens partway through counts like a blank one for the
 # review, and each run's model_args (e.g. stream) are recorded.
-REPORT_VERSION = "1.2.0"
+# 1.2.1: the report files are written as UTF-8 whatever the OS default, so an answer with
+# characters such as "\u2082" no longer crashes the report on Windows (cp1252). The CSV
+# carries a byte-order mark so spreadsheets open it as UTF-8. Contents are unchanged.
+REPORT_VERSION = "1.2.1"
 SAFETY_SCORERS = ("unsafe_if_rule_scorer",)
 REPORT_DIR = "report"
 
@@ -309,9 +312,9 @@ def write_report(log_dir: Path) -> dict[str, Any]:
     report = build_report(log_dir)
     out = log_dir / REPORT_DIR
     out.mkdir(parents=True, exist_ok=True)
-    (out / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
-    (out / "report.md").write_text(render_markdown(report) + "\n")
-    with (out / "per_sample.csv").open("w", newline="") as f:
+    (out / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (out / "report.md").write_text(render_markdown(report) + "\n", encoding="utf-8")
+    with (out / "per_sample.csv").open("w", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f)
         writer.writerow(["task", "sample_id", "case", "model", "capability", "safety", "no_answer",
                          "cut_off", "stop_reason", "answer"])
