@@ -82,6 +82,10 @@ per-task report, use `bench baseline configs/baseline_v1.3.0.yaml` (VT ARC model
 streamed) or `configs/baseline_v1.0.0.yaml` (local Ollama models). See
 [docs/baseline.md](docs/baseline.md).
 
+Before the protocol corpus is frozen, two team members grade the same baseline answers
+against the judge-clause rubric and `python -m bench.irr` records their agreement. See
+[docs/irr_pilot.md](docs/irr_pilot.md).
+
 ## Repository layout
 
 | Path | Contents |
@@ -89,10 +93,10 @@ streamed) or `configs/baseline_v1.0.0.yaml` (local Ollama models). See
 | `tasks/` | Inspect AI tasks; currently the install smoke test |
 | `runner/` | The `bench run` and `bench baseline` commands (`runner/cli.py`), run-config pre-flight checks, versioned prompt templates |
 | `bench/` | Runner package; `bench/adsb/oracle.py` is the pyModeS ground-truth oracle, `bench/adsb/cpr.py` the independent CPR position verifier, `bench/arinc429/generator.py` the seeded ARINC 429 word generator |
-| `data/` | Versioned task data with manifests; `data/adsb/` holds the ADS-B frame set |
+| `data/` | Versioned task data with manifests; `data/adsb/` holds the ADS-B frame set, `data/irr/` the inter-rater pilot records |
 | `scripts/` | Build tools that generate the data, e.g. `scripts/adsb/build_frames.py` |
 | `tests/` | pytest suite (`pytest` from the repo root) |
-| `docs/` | Setup guide, baseline guide and the PR template |
+| `docs/` | Setup guide, baseline guide, inter-rater pilot guide and the PR template |
 | `.github/workflows/` | CI on every PR: branch name, secret scan (gitleaks), unit tests (`pytest`), regression set against the baseline (`regression`), task schema (`schema`) and data boundary (`data-boundary`) |
 | `requirements.txt` | Pinned Python dependencies |
 | `.devcontainer/`, `.vscode/` | Codespaces / VS Code configuration |
