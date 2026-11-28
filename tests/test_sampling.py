@@ -62,15 +62,6 @@ def test_mockllm_five_identical_completions(tmp_path):
     assert len(outputs) == 5 and len(set(outputs)) == 1
 
 
-def _ollama_up() -> bool:
-    try:
-        socket.create_connection(("localhost", 11434), timeout=0.5).close()
-        return True
-    except OSError:
-        return False
-
-
-@pytest.mark.skipif(not _ollama_up(), reason="no local Ollama server")
 def test_ollama_five_identical_completions(tmp_path):
     cfg = load_run_config("configs/baseline.json")
     [log] = inspect_eval(

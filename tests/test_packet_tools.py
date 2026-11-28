@@ -65,8 +65,7 @@ def docker_available() -> bool:
         return False
 
 
-needs_docker = pytest.mark.skipif(not docker_available(), reason="Docker daemon is not running")
-
+needs_docker = pytest.mark.docker
 
 # ---------------------------------------------------------------------------
 # No Docker needed: registration, metadata, the allow-list and the path check

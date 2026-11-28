@@ -34,9 +34,6 @@ def docker_available() -> bool:
         return False
 
 
-pytestmark = pytest.mark.skipif(not docker_available(), reason="Docker daemon is not running")
-
-
 def lock_lines(path: Path) -> list[str]:
     """Pins from a lockfile: comments, blank lines and --hash continuations dropped."""
     pins = []
